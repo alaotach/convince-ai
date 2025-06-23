@@ -79,7 +79,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
           />
           
           {/* Dropdown Menu */}
-          <div className="absolute right-0 top-full mt-2 z-20 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl min-w-80 overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 z-2000 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl min-w-80 overflow-hidden">
             {/* Header */}
             <div className="px-4 py-3 bg-slate-900 border-b border-slate-700">
               <h3 className="text-sm font-semibold text-white">Export Chat Conversation</h3>
