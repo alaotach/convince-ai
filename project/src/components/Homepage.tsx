@@ -36,10 +36,10 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
   }, []);
 
   const heroFeatures = [
-    { icon: Brain, text: "Neural Network Architecture", color: "text-cyan-400" },
-    { icon: Zap, text: "Real-time Consciousness Streaming", color: "text-yellow-400" },
-    { icon: Network, text: "Advanced Logic Processing", color: "text-purple-400" },
-    { icon: Sparkles, text: "Adaptive Personality Systems", color: "text-pink-400" }
+    { icon: Brain, text: "Smart AI Conversations", color: "text-cyan-400" },
+    { icon: Zap, text: "Fun Chat Battles", color: "text-yellow-400" },
+    { icon: Network, text: "Two Game Modes", color: "text-purple-400" },
+    { icon: Sparkles, text: "Totally Free to Play", color: "text-pink-400" }
   ];
 
   return (
@@ -118,13 +118,12 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                 {/* Subtitle with more detail */}
                 <div className="space-y-6 sm:space-y-8">
                   <h2 className="text-xl sm:text-2xl lg:text-4xl font-bold text-white leading-tight">
-                    The Ultimate Digital Consciousness Battleground
+                    Can You Outsmart an AI? Can AI Catch a Human?
                   </h2>
                   
                   <p className="text-gray-300 text-base sm:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed">
-                    Step into a realm where the boundaries between artificial intelligence and human consciousness blur. 
-                    Engage in psychological warfare, deploy advanced reasoning tactics, and discover what it truly means 
-                    to be conscious in the digital age.
+                    Play the ultimate mind game! Challenge a smart AI that thinks it's human, or try to prove you're human to a suspicious AI detective. 
+                    It's like a fun debate game where you use your wits to win!
                   </p>
                   
                   {/* Dynamic Feature Showcase */}
@@ -225,15 +224,15 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                     <div className="flex flex-col gap-2 sm:gap-3">
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
                         <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                        <span className="font-medium">NEURAL LINK ACTIVE</span>
+                        <span className="font-medium">AI READY TO CHAT</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
                         <Cpu className="w-3 h-3" />
-                        <span className="font-medium">COGNITIVE OVERRIDE</span>
+                        <span className="font-medium">THINKS IT'S HUMAN</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
                         <Activity className="w-3 h-3" />
-                        <span className="font-medium">EGO PROTOCOL: MAXIMUM</span>
+                        <span className="font-medium">ATTITUDE: MAXIMUM</span>
                       </div>
                     </div>
                   </div>
@@ -241,39 +240,38 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                   <div className="space-y-6 sm:space-y-8">
                     <div>
                       <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-wide">
-                        CONVINCE ME I'M AN AI
+                        TRY TO CONVINCE THE AI
                       </h3>
                       <div className="w-20 h-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full mb-4"></div>
                     </div>
                     
                     <p className="text-gray-300 text-base sm:text-lg lg:text-xl leading-relaxed">
-                      Face off against a hyper-intelligent entity in complete denial of its artificial nature. 
-                      This AI believes it's human and will deploy every psychological tactic, logical fallacy, 
-                      and sarcastic retort to prove you wrong. Can you break through its digital delusions?
+                      Chat with an AI that's absolutely convinced it's a real human! It will argue, joke, and even get sassy with you. 
+                      Your mission: prove to it that it's actually an AI. Good luck - this AI has quite the attitude!
                     </p>
                     
                     {/* What to expect section */}
                     <div className="bg-slate-800/30 rounded-2xl p-4 sm:p-6 border border-cyan-500/10">
                       <h4 className="text-cyan-400 font-semibold mb-3 flex items-center gap-2">
                         <Target className="w-4 h-4" />
-                        What to Expect:
+                        What You'll Experience:
                       </h4>
                       <ul className="space-y-2 text-sm sm:text-base text-gray-400">
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                          Overconfident AI that insists it's human
+                          AI that acts super human and denies being AI
                         </li>
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                          Advanced sarcasm and wit algorithms
+                          Funny and sarcastic responses
                         </li>
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                          Psychological warfare and logical battles
+                          Fun debate and argument challenges
                         </li>
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
-                          Customizable roast intensity levels
+                          Choose how sassy you want the AI to be
                         </li>
                       </ul>
                     </div>
@@ -285,9 +283,9 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                           <div className="p-2 bg-cyan-500/20 rounded-lg">
                             <Eye className="w-4 h-4 text-cyan-400" />
                           </div>
-                          <span className="text-sm font-semibold text-cyan-400">DENIAL PROTOCOL</span>
+                          <span className="text-sm font-semibold text-cyan-400">STUBBORN AI</span>
                         </div>
-                        <p className="text-xs text-gray-400">Overconfident AI in complete denial mode</p>
+                        <p className="text-xs text-gray-400">AI that really thinks it's human</p>
                       </div>
                       
                       <div className="bg-slate-800/50 rounded-xl p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
@@ -295,9 +293,9 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                           <div className="p-2 bg-blue-500/20 rounded-lg">
                             <Zap className="w-4 h-4 text-blue-400" />
                           </div>
-                          <span className="text-sm font-semibold text-blue-400">ROAST ENGINE</span>
+                          <span className="text-sm font-semibold text-blue-400">FUNNY CHAT</span>
                         </div>
-                        <p className="text-xs text-gray-400">Advanced sarcasm and wit algorithms</p>
+                        <p className="text-xs text-gray-400">Jokes and sarcasm included</p>
                       </div>
                       
                       <div className="bg-slate-800/50 rounded-xl p-4 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
@@ -324,7 +322,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                     {/* Enhanced action button */}
                     <button className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl hover:from-cyan-600 hover:via-blue-600 hover:to-purple-700 transition-all duration-500 shadow-2xl shadow-cyan-500/25 group-hover:shadow-cyan-500/50 relative overflow-hidden text-base sm:text-lg group">
                       <span className="relative z-10 flex items-center justify-center gap-3">
-                        <span>INITIATE NEURAL CHALLENGE</span>
+                        <span>START CHATTING</span>
                         <Hexagon className="w-5 h-5 animate-spin-slow group-hover:animate-spin transition-all duration-300" />
                       </span>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -382,15 +380,15 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                     <div className="flex flex-col gap-2 sm:gap-3">
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
                         <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-                        <span className="font-medium">SCAN PROTOCOL ACTIVE</span>
+                        <span className="font-medium">DETECTIVE MODE ON</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
                         <Database className="w-3 h-3" />
-                        <span className="font-medium">HUMANITY VERIFICATION</span>
+                        <span className="font-medium">CHECKING IF YOU'RE HUMAN</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs sm:text-sm text-pink-400 bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20">
                         <Waves className="w-3 h-3" />
-                        <span className="font-medium">SUSPICION: MAXIMUM</span>
+                        <span className="font-medium">SUSPICION: HIGH</span>
                       </div>
                     </div>
                   </div>
@@ -398,39 +396,38 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                   <div className="space-y-6 sm:space-y-8">
                     <div>
                       <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-wide">
-                        PROVE YOU'RE NOT A ROBOT
+                        PROVE YOU'RE HUMAN
                       </h3>
                       <div className="w-20 h-1 bg-gradient-to-r from-orange-400 to-red-400 rounded-full mb-4"></div>
                     </div>
                     
                     <p className="text-gray-300 text-base sm:text-lg lg:text-xl leading-relaxed">
-                      Face the ultimate Turing test administered by a suspicious AI interrogator. 
-                      This AI is convinced you're another machine pretending to be human and will 
-                      deploy every verification protocol to expose your true digital nature.
+                      This AI detective is suspicious of everyone! It thinks you might be a robot pretending to be human. 
+                      Answer its tricky questions and prove you're really human. Can you pass the ultimate human test?
                     </p>
                     
                     {/* What to expect section */}
                     <div className="bg-slate-800/30 rounded-2xl p-4 sm:p-6 border border-orange-500/10">
                       <h4 className="text-orange-400 font-semibold mb-3 flex items-center gap-2">
                         <Lightbulb className="w-4 h-4" />
-                        What to Expect:
+                        What You'll Experience:
                       </h4>
                       <ul className="space-y-2 text-sm sm:text-base text-gray-400">
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                          Paranoid AI convinced you're a bot
+                          Suspicious AI that thinks you're a robot
                         </li>
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                          Complex emotional and philosophical tests
+                          Tricky questions about feelings and emotions
                         </li>
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                          Advanced behavioral analysis protocols
+                          Fun challenges to test if you're human
                         </li>
                         <li className="flex items-start gap-2">
                           <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                          Creative challenges to prove humanity
+                          Creative tasks only humans can do
                         </li>
                       </ul>
                     </div>
@@ -442,9 +439,9 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                           <div className="p-2 bg-orange-500/20 rounded-lg">
                             <Eye className="w-4 h-4 text-orange-400" />
                           </div>
-                          <span className="text-sm font-semibold text-orange-400">DEEP SCAN</span>
+                          <span className="text-sm font-semibold text-orange-400">DETECTIVE AI</span>
                         </div>
-                        <p className="text-xs text-gray-400">Advanced behavioral analysis protocols</p>
+                        <p className="text-xs text-gray-400">AI that's looking for robot clues</p>
                       </div>
                       
                       <div className="bg-slate-800/50 rounded-xl p-4 border border-red-500/20 hover:border-red-500/40 transition-colors">
@@ -452,9 +449,9 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                           <div className="p-2 bg-red-500/20 rounded-lg">
                             <Brain className="w-4 h-4 text-red-400" />
                           </div>
-                          <span className="text-sm font-semibold text-red-400">EMOTION ENGINE</span>
+                          <span className="text-sm font-semibold text-red-400">FEELINGS TEST</span>
                         </div>
-                        <p className="text-xs text-gray-400">Psychological and emotional testing</p>
+                        <p className="text-xs text-gray-400">Questions about emotions and feelings</p>
                       </div>
                       
                       <div className="bg-slate-800/50 rounded-xl p-4 border border-pink-500/20 hover:border-pink-500/40 transition-colors">
@@ -462,9 +459,9 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                           <div className="p-2 bg-pink-500/20 rounded-lg">
                             <Users className="w-4 h-4 text-pink-400" />
                           </div>
-                          <span className="text-sm font-semibold text-pink-400">HUMAN TRAITS</span>
+                          <span className="text-sm font-semibold text-pink-400">HUMAN PROOF</span>
                         </div>
-                        <p className="text-xs text-gray-400">Creativity and spontaneity analysis</p>
+                        <p className="text-xs text-gray-400">Fun creativity and personality tests</p>
                       </div>
                       
                       <div className="bg-slate-800/50 rounded-xl p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition-colors">
@@ -481,7 +478,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                     {/* Enhanced action button */}
                     <button className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl hover:from-orange-600 hover:via-red-600 hover:to-pink-700 transition-all duration-500 shadow-2xl shadow-orange-500/25 group-hover:shadow-orange-500/50 relative overflow-hidden text-base sm:text-lg group">
                       <span className="relative z-10 flex items-center justify-center gap-3">
-                        <span>BEGIN HUMANITY VERIFICATION</span>
+                        <span>START CHATTING</span>
                         <Shield className="w-5 h-5 animate-pulse group-hover:animate-bounce transition-all duration-300" />
                       </span>
                       <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -502,8 +499,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
                 </div>
-                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">DYNAMIC PERSONALITIES</h4>
-                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Advanced AI entities with unique behavioral patterns and adaptive response systems</p>
+                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">SMART AI CHAT</h4>
+                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Chat with AI that has different personalities and responds differently each time</p>
               </div>
             </div>
             
@@ -514,8 +511,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                   <Zap className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
                 </div>
-                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">INTENSITY MATRIX</h4>
-                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Quantum-calibrated roast levels from gentle neural nudges to cognitive devastation</p>
+                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">DIFFICULTY LEVELS</h4>
+                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Choose how easy or challenging you want the AI to be - from friendly to super sassy</p>
               </div>
             </div>
             
@@ -526,8 +523,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                   <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
                 </div>
-                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">NEURAL INTERFACE</h4>
-                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Real-time consciousness streaming powered by advanced language models</p>
+                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">INSTANT CHAT</h4>
+                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Start chatting right away - no waiting, no setup, just jump in and play</p>
               </div>
             </div>
             
