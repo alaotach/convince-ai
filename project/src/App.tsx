@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { ChatContainer } from './components/ChatContainer';
 import { Homepage } from './components/Homepage';
@@ -57,7 +57,9 @@ The app will work without it, but you'll get error messages instead of AI respon
           mode={mode} 
           onClearChat={clearChat} 
           onBackToHome={handleBackToHome} 
-          onShowSettings={() => setIsSettingsModalOpen(true)} 
+          onShowSettings={() => setIsSettingsModalOpen(true)}
+          messages={messages}
+          roastLevel={roastLevel}
         />
         <div className="flex-1 overflow-hidden">
           <ChatContainer 
@@ -75,6 +77,7 @@ The app will work without it, but you'll get error messages instead of AI respon
         onModeChange={setMode}
         roastLevel={roastLevel}
         onRoastLevelChange={setRoastLevel}
+        messages={messages}
       />
     </div>
   );

@@ -1,8 +1,9 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { ChatMode } from '../types/chat';
+import { ChatMode, Message } from '../types/chat';
 import { ModeToggle } from './ModeToggle';
 import { RoastLevelSlider } from './RoastLevelSlider';
+import { ExportButton } from './ExportButton';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface SettingsModalProps {
   onModeChange: (mode: ChatMode) => void;
   roastLevel: number;
   onRoastLevelChange: (level: number) => void;
+  messages?: Message[];
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -20,6 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onModeChange,
   roastLevel,
   onRoastLevelChange,
+  messages = [],
 }) => {
   if (!isOpen) return null;
 
@@ -35,6 +38,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="p-6 space-y-8">
           <ModeToggle mode={mode} onModeChange={onModeChange} />
           <RoastLevelSlider value={roastLevel} onChange={onRoastLevelChange} />
+          
+          {/* Export Section */}
+          {messages.length > 0 && (
+            <div className="border-t border-slate-700 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                Export Chat Conversation
+              </h3>
+              <div className="bg-slate-800 rounded-lg p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-300">
+                    Download your conversation in various formats
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {messages.length} messages available for export
+                  </p>
+                </div>
+                <ExportButton 
+                  messages={messages}
+                  mode={mode}
+                  roastLevel={roastLevel}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
