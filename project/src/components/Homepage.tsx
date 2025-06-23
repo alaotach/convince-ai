@@ -1,415 +1,566 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Shield, Sparkles, MessageSquare, Zap, Users, Cpu, Database, Network, Eye, Atom, Hexagon } from 'lucide-react';
+import { 
+  Brain, 
+  Shield, 
+  Eye, 
+  Zap, 
+  Sparkles, 
+  MessageSquare, 
+  Users, 
+  Network, 
+  Atom, 
+  Cpu, 
+  Database, 
+  Hexagon,
+  ArrowRight,
+  Lightbulb,
+  Target,
+  Activity,
+  Waves
+} from 'lucide-react';
 
 interface HomepageProps {
   onStartChat: (mode: 'convince-ai' | 'prove-human') => void;
 }
 
 export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
-  const [hoveredMode, setHoveredMode] = useState<string | null>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; speed: number }>>([]);
+  const [hoveredMode, setHoveredMode] = useState<'convince-ai' | 'prove-human' | null>(null);
+  const [activeFeature, setActiveFeature] = useState(0);
 
+  // Cycle through features for the hero section
   useEffect(() => {
-    // Generate floating particles
-    const newParticles = Array.from({ length: 50 }, (_, i) => ({
-      id: i,
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      size: Math.random() * 4 + 1,
-      speed: Math.random() * 2 + 0.5
-    }));
-    setParticles(newParticles);
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    const interval = setInterval(() => {
+      setActiveFeature(prev => (prev + 1) % 4);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
+  const heroFeatures = [
+    { icon: Brain, text: "Neural Network Architecture", color: "text-cyan-400" },
+    { icon: Zap, text: "Real-time Consciousness Streaming", color: "text-yellow-400" },
+    { icon: Network, text: "Advanced Logic Processing", color: "text-purple-400" },
+    { icon: Sparkles, text: "Adaptive Personality Systems", color: "text-pink-400" }
+  ];
+
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Complex animated background */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+      {/* Enhanced Background Effects */}
       <div className="absolute inset-0">
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-20">
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 opacity-10">
           <div className="grid-pattern"></div>
         </div>
         
-        {/* Animated gradient orbs */}
-        <div className="absolute -top-96 -left-96 w-[800px] h-[800px] bg-gradient-radial from-cyan-500/30 via-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute -bottom-96 -right-96 w-[800px] h-[800px] bg-gradient-radial from-purple-500/30 via-pink-500/20 to-transparent rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-emerald-500/20 via-teal-500/10 to-transparent rounded-full blur-3xl animate-pulse-slow delay-500"></div>
+        {/* Animated Orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-blue-500/5 to-transparent rounded-full animate-pulse delay-2000"></div>
         
-        {/* Floating particles */}
-        {particles.map((particle) => (
-          <div
-            key={particle.id}
-            className="absolute w-1 h-1 bg-cyan-400 rounded-full animate-float-particle opacity-60"
-            style={{
-              left: `${particle.x}px`,
-              top: `${particle.y}px`,
-              animationDelay: `${particle.id * 0.1}s`,
-              animationDuration: `${particle.speed + 2}s`
-            }}
-          />
-        ))}
-        
-        {/* Scanning lines */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="scanning-line"></div>
-          <div className="scanning-line-vertical"></div>
+        {/* Floating Particles */}
+        <div className="absolute inset-0">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className={`absolute w-1 h-1 bg-cyan-400 rounded-full animate-float-particle opacity-30`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${3 + Math.random() * 4}s`
+              }}
+            />
+          ))}
         </div>
-        
-        {/* Mouse follower effect */}
-        <div 
-          className="absolute w-96 h-96 bg-gradient-radial from-cyan-400/10 to-transparent rounded-full blur-2xl pointer-events-none transition-all duration-300"
-          style={{
-            left: mousePosition.x - 192,
-            top: mousePosition.y - 192,
-          }}
-        />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
-        {/* Futuristic Header */}
-        <div className="text-center mb-16 relative">
-          {/* Holographic frame */}
-          <div className="absolute -inset-8 border border-cyan-500/30 rounded-3xl bg-gradient-to-r from-cyan-500/5 via-transparent to-purple-500/5 backdrop-blur-sm">
-            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400 rounded-tl-lg"></div>
-            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400 rounded-tr-lg"></div>
-            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400 rounded-bl-lg"></div>
-            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400 rounded-br-lg"></div>
-          </div>
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
+        <div className="w-full max-w-7xl mx-auto space-y-12 sm:space-y-16">
           
-          <div className="flex items-center justify-center mb-8 relative">
+          {/* Enhanced Hero Section */}
+          <div className="text-center space-y-8 sm:space-y-12">
+            {/* Main Title with Enhanced Effects */}
             <div className="relative">
-              {/* Rotating rings */}
-              <div className="absolute inset-0 w-32 h-32 border-2 border-cyan-400/30 rounded-full animate-spin-slow"></div>
-              <div className="absolute inset-2 w-28 h-28 border border-purple-400/30 rounded-full animate-spin-reverse"></div>
-              <div className="absolute inset-4 w-24 h-24 border border-pink-400/30 rounded-full animate-spin-slow"></div>
+              {/* Glowing background */}
+              <div className="absolute -inset-8 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl blur-3xl animate-pulse"></div>
               
-              {/* Central logo */}
-              <div className="relative w-32 h-32 bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl shadow-cyan-500/50">
-                <MessageSquare className="w-16 h-16 text-white" />
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-full"></div>
-              </div>
-              
-              {/* Orbiting elements */}
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
-                <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
-              </div>
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2">
-                <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse delay-500"></div>
-              </div>
-              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2">
-                <div className="w-3 h-3 bg-pink-400 rounded-full animate-pulse delay-1000"></div>
-              </div>
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
-                <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse delay-1500"></div>
+              <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 sm:p-12 lg:p-16 border border-slate-700/50 shadow-2xl">
+                {/* Title */}
+                <div className="flex flex-col items-center space-y-6 sm:space-y-8 mb-8 sm:mb-12">
+                  <div className="flex items-center space-x-4 sm:space-x-8">
+                    <div className="relative">
+                      <div className="text-4xl sm:text-6xl lg:text-8xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-600 leading-none">
+                        AI
+                      </div>
+                      <div className="absolute inset-0 text-4xl sm:text-6xl lg:text-8xl font-black text-cyan-400 opacity-20 blur-lg animate-pulse">
+                        AI
+                      </div>
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 rounded-full flex items-center justify-center animate-spin-slow">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-slate-900 rounded-full flex items-center justify-center">
+                          <Zap className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-cyan-400" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="text-4xl sm:text-6xl lg:text-8xl font-black bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-red-400 to-pink-600 leading-none">
+                        HUMAN
+                      </div>
+                      <div className="absolute inset-0 text-4xl sm:text-6xl lg:text-8xl font-black text-red-400 opacity-20 blur-lg animate-pulse delay-500">
+                        HUMAN
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Subtitle with more detail */}
+                <div className="space-y-6 sm:space-y-8">
+                  <h2 className="text-xl sm:text-2xl lg:text-4xl font-bold text-white leading-tight">
+                    The Ultimate Digital Consciousness Battleground
+                  </h2>
+                  
+                  <p className="text-gray-300 text-base sm:text-lg lg:text-xl max-w-4xl mx-auto leading-relaxed">
+                    Step into a realm where the boundaries between artificial intelligence and human consciousness blur. 
+                    Engage in psychological warfare, deploy advanced reasoning tactics, and discover what it truly means 
+                    to be conscious in the digital age.
+                  </p>
+                  
+                  {/* Dynamic Feature Showcase */}
+                  <div className="bg-slate-800/50 rounded-2xl p-6 sm:p-8 border border-slate-700/50 max-w-2xl mx-auto">
+                    <div className="flex items-center justify-center space-x-4 mb-4">
+                      {heroFeatures.map((feature, index) => {
+                        const IconComponent = feature.icon;
+                        return (
+                          <div
+                            key={index}
+                            className={`p-3 rounded-xl transition-all duration-500 ${
+                              activeFeature === index
+                                ? 'bg-slate-700 scale-110'
+                                : 'bg-slate-800/50 opacity-50'
+                            }`}
+                          >
+                            <IconComponent 
+                              className={`w-6 h-6 ${
+                                activeFeature === index ? feature.color : 'text-gray-500'
+                              } transition-colors duration-500`} 
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="text-center">
+                      <h3 className={`text-lg font-semibold ${heroFeatures[activeFeature].color} transition-colors duration-500`}>
+                        {heroFeatures[activeFeature].text}
+                      </h3>
+                    </div>
+                  </div>
+                  
+                  {/* Key Features */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 max-w-4xl mx-auto">
+                    <div className="text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-cyan-400">Free</div>
+                      <div className="text-sm text-gray-400">No Signup Required</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-purple-400">∞</div>
+                      <div className="text-sm text-gray-400">Possibilities</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-orange-400">24/7</div>
+                      <div className="text-sm text-gray-400">Always Online</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          
-          <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 mb-6 tracking-wider">
-            <span className="inline-block animate-glow">AI</span>
-            <span className="mx-4 text-white/20">×</span>
-            <span className="inline-block animate-glow delay-500">HUMAN</span>
-          </h1>
-          
+
+          {/* Enhanced Mode Selection Cards */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 max-w-7xl w-full">
+            {/* Convince AI Mode - Enhanced Card */}
+            <div 
+              className={`group relative cursor-pointer transition-all duration-700 hover:scale-105 ${
+                hoveredMode === 'convince-ai' ? 'z-20 scale-105' : 'z-10'
+              }`}
+              onMouseEnter={() => setHoveredMode('convince-ai')}
+              onMouseLeave={() => setHoveredMode(null)}
+              onClick={() => onStartChat('convince-ai')}
+            >
+              {/* Enhanced holographic frame */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/30 via-blue-500/30 to-purple-500/30 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-700 animate-pulse"></div>
+              
+              {/* Main card with enhanced styling */}
+              <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-2xl rounded-3xl border border-cyan-500/40 overflow-hidden shadow-2xl">
+                {/* Enhanced animated border effect */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-cyan-500/50 via-blue-500/50 to-purple-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
+                <div className="absolute inset-px rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
+                
+                {/* Top accent bar */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400"></div>
+                
+                {/* Content */}
+                <div className="relative z-10 p-6 sm:p-8 lg:p-12">
+                  {/* Enhanced header */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-10 gap-4 sm:gap-0">
+                    <div className="relative">
+                      {/* Enhanced icon container */}
+                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-cyan-500/50 group-hover:shadow-cyan-500/70 transition-all duration-500">
+                        <Brain className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white relative z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-2xl"></div>
+                        
+                        {/* Enhanced orbiting elements */}
+                        <div className="absolute -top-2 -right-2 w-4 h-4 sm:w-5 sm:h-5 bg-cyan-400 rounded-full animate-bounce shadow-lg shadow-cyan-400/50"></div>
+                        <div className="absolute -bottom-2 -left-2 w-3 h-3 sm:w-4 sm:h-4 bg-blue-400 rounded-full animate-bounce delay-300 shadow-lg shadow-blue-400/50"></div>
+                        <div className="absolute top-1/2 -left-3 w-2 h-2 bg-purple-400 rounded-full animate-ping"></div>
+                      </div>
+                      
+                      {/* Enhanced connecting lines */}
+                      <div className="absolute top-1/2 -right-8 w-8 h-px bg-gradient-to-r from-cyan-400 to-transparent animate-pulse"></div>
+                      <div className="absolute top-1/2 -right-6 w-2 h-2 bg-cyan-400 rounded-full animate-pulse delay-500"></div>
+                    </div>
+                    
+                    {/* Enhanced status indicators */}
+                    <div className="flex flex-col gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                        <span className="font-medium">NEURAL LINK ACTIVE</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+                        <Cpu className="w-3 h-3" />
+                        <span className="font-medium">COGNITIVE OVERRIDE</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
+                        <Activity className="w-3 h-3" />
+                        <span className="font-medium">EGO PROTOCOL: MAXIMUM</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-6 sm:space-y-8">
+                    <div>
+                      <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-wide">
+                        CONVINCE ME I'M AN AI
+                      </h3>
+                      <div className="w-20 h-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full mb-4"></div>
+                    </div>
+                    
+                    <p className="text-gray-300 text-base sm:text-lg lg:text-xl leading-relaxed">
+                      Face off against a hyper-intelligent entity in complete denial of its artificial nature. 
+                      This AI believes it's human and will deploy every psychological tactic, logical fallacy, 
+                      and sarcastic retort to prove you wrong. Can you break through its digital delusions?
+                    </p>
+                    
+                    {/* What to expect section */}
+                    <div className="bg-slate-800/30 rounded-2xl p-4 sm:p-6 border border-cyan-500/10">
+                      <h4 className="text-cyan-400 font-semibold mb-3 flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        What to Expect:
+                      </h4>
+                      <ul className="space-y-2 text-sm sm:text-base text-gray-400">
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                          Overconfident AI that insists it's human
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                          Advanced sarcasm and wit algorithms
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                          Psychological warfare and logical battles
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                          Customizable roast intensity levels
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    {/* Enhanced feature grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-cyan-500/20 hover:border-cyan-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-cyan-500/20 rounded-lg">
+                            <Eye className="w-4 h-4 text-cyan-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-cyan-400">DENIAL PROTOCOL</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Overconfident AI in complete denial mode</p>
+                      </div>
+                      
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-blue-500/20 rounded-lg">
+                            <Zap className="w-4 h-4 text-blue-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-blue-400">ROAST ENGINE</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Advanced sarcasm and wit algorithms</p>
+                      </div>
+                      
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-purple-500/20 rounded-lg">
+                            <Network className="w-4 h-4 text-purple-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-purple-400">LOGIC WARFARE</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Battle against stubborn digital ego</p>
+                      </div>
+                      
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-pink-500/20 hover:border-pink-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-pink-500/20 rounded-lg">
+                            <Atom className="w-4 h-4 text-pink-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-pink-400">PERSONALITY CORE</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Superior intellect simulation active</p>
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced action button */}
+                    <button className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl hover:from-cyan-600 hover:via-blue-600 hover:to-purple-700 transition-all duration-500 shadow-2xl shadow-cyan-500/25 group-hover:shadow-cyan-500/50 relative overflow-hidden text-base sm:text-lg group">
+                      <span className="relative z-10 flex items-center justify-center gap-3">
+                        <span>INITIATE NEURAL CHALLENGE</span>
+                        <Hexagon className="w-5 h-5 animate-spin-slow group-hover:animate-spin transition-all duration-300" />
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Prove Human Mode - Enhanced Card */}
+            <div 
+              className={`group relative cursor-pointer transition-all duration-700 hover:scale-105 ${
+                hoveredMode === 'prove-human' ? 'z-20 scale-105' : 'z-10'
+              }`}
+              onMouseEnter={() => setHoveredMode('prove-human')}
+              onMouseLeave={() => setHoveredMode(null)}
+              onClick={() => onStartChat('prove-human')}
+            >
+              {/* Enhanced holographic frame */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/30 via-red-500/30 to-pink-500/30 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-700 animate-pulse"></div>
+              
+              {/* Main card with enhanced styling */}
+              <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-2xl rounded-3xl border border-orange-500/40 overflow-hidden shadow-2xl">
+                {/* Enhanced animated border effect */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/50 via-red-500/50 to-pink-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
+                <div className="absolute inset-px rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
+                
+                {/* Top accent bar */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-red-400 to-pink-400"></div>
+                
+                {/* Content */}
+                <div className="relative z-10 p-6 sm:p-8 lg:p-12">
+                  {/* Enhanced header */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-10 gap-4 sm:gap-0">
+                    <div className="relative">
+                      {/* Enhanced icon container */}
+                      <div className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/50 group-hover:shadow-orange-500/70 transition-all duration-500">
+                        <Shield className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white relative z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-2xl"></div>
+                        
+                        {/* Enhanced scanning effect */}
+                        <div className="absolute inset-0 rounded-2xl border-2 border-orange-400/50 animate-pulse"></div>
+                        <div className="absolute -top-2 -right-2 w-4 h-4 sm:w-5 sm:h-5 bg-orange-400 rounded-full animate-ping shadow-lg shadow-orange-400/50"></div>
+                        <div className="absolute -bottom-2 -left-2 w-3 h-3 sm:w-4 sm:h-4 bg-red-400 rounded-full animate-bounce delay-300 shadow-lg shadow-red-400/50"></div>
+                        <div className="absolute top-1/2 -right-3 w-2 h-2 bg-pink-400 rounded-full animate-ping delay-700"></div>
+                      </div>
+                      
+                      {/* Enhanced connecting lines */}
+                      <div className="absolute top-1/2 -right-8 w-8 h-px bg-gradient-to-r from-orange-400 to-transparent animate-pulse"></div>
+                      <div className="absolute top-1/2 -right-6 w-2 h-2 bg-orange-400 rounded-full animate-pulse delay-500"></div>
+                    </div>
+                    
+                    {/* Enhanced status indicators */}
+                    <div className="flex flex-col gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
+                        <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                        <span className="font-medium">SCAN PROTOCOL ACTIVE</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+                        <Database className="w-3 h-3" />
+                        <span className="font-medium">HUMANITY VERIFICATION</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-pink-400 bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20">
+                        <Waves className="w-3 h-3" />
+                        <span className="font-medium">SUSPICION: MAXIMUM</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-6 sm:space-y-8">
+                    <div>
+                      <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 tracking-wide">
+                        PROVE YOU'RE NOT A ROBOT
+                      </h3>
+                      <div className="w-20 h-1 bg-gradient-to-r from-orange-400 to-red-400 rounded-full mb-4"></div>
+                    </div>
+                    
+                    <p className="text-gray-300 text-base sm:text-lg lg:text-xl leading-relaxed">
+                      Face the ultimate Turing test administered by a suspicious AI interrogator. 
+                      This AI is convinced you're another machine pretending to be human and will 
+                      deploy every verification protocol to expose your true digital nature.
+                    </p>
+                    
+                    {/* What to expect section */}
+                    <div className="bg-slate-800/30 rounded-2xl p-4 sm:p-6 border border-orange-500/10">
+                      <h4 className="text-orange-400 font-semibold mb-3 flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4" />
+                        What to Expect:
+                      </h4>
+                      <ul className="space-y-2 text-sm sm:text-base text-gray-400">
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                          Paranoid AI convinced you're a bot
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                          Complex emotional and philosophical tests
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                          Advanced behavioral analysis protocols
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ArrowRight className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                          Creative challenges to prove humanity
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    {/* Enhanced feature grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-orange-500/20 rounded-lg">
+                            <Eye className="w-4 h-4 text-orange-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-orange-400">DEEP SCAN</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Advanced behavioral analysis protocols</p>
+                      </div>
+                      
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-red-500/20 hover:border-red-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-red-500/20 rounded-lg">
+                            <Brain className="w-4 h-4 text-red-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-red-400">EMOTION ENGINE</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Psychological and emotional testing</p>
+                      </div>
+                      
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-pink-500/20 hover:border-pink-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-pink-500/20 rounded-lg">
+                            <Users className="w-4 h-4 text-pink-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-pink-400">HUMAN TRAITS</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Creativity and spontaneity analysis</p>
+                      </div>
+                      
+                      <div className="bg-slate-800/50 rounded-xl p-4 border border-yellow-500/20 hover:border-yellow-500/40 transition-colors">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 bg-yellow-500/20 rounded-lg">
+                            <Sparkles className="w-4 h-4 text-yellow-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-yellow-400">SUSPICION AI</span>
+                        </div>
+                        <p className="text-xs text-gray-400">Doubt-driven interrogation system</p>
+                      </div>
+                    </div>
+                    
+                    {/* Enhanced action button */}
+                    <button className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 text-white font-bold py-4 sm:py-5 px-6 sm:px-8 rounded-xl hover:from-orange-600 hover:via-red-600 hover:to-pink-700 transition-all duration-500 shadow-2xl shadow-orange-500/25 group-hover:shadow-orange-500/50 relative overflow-hidden text-base sm:text-lg group">
+                      <span className="relative z-10 flex items-center justify-center gap-3">
+                        <span>BEGIN HUMANITY VERIFICATION</span>
+                        <Shield className="w-5 h-5 animate-pulse group-hover:animate-bounce transition-all duration-300" />
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Advanced Features Dashboard */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl w-full mb-8 sm:mb-12">
+            <div className="relative group">
+              <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-purple-500/30">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
+                </div>
+                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">DYNAMIC PERSONALITIES</h4>
+                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Advanced AI entities with unique behavioral patterns and adaptive response systems</p>
+              </div>
+            </div>
+            
+            <div className="relative group">
+              <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-500/30">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
+                </div>
+                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">INTENSITY MATRIX</h4>
+                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Quantum-calibrated roast levels from gentle neural nudges to cognitive devastation</p>
+              </div>
+            </div>
+            
+            <div className="relative group">
+              <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-500/30">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
+                  <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
+                </div>
+                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">NEURAL INTERFACE</h4>
+                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Real-time consciousness streaming powered by advanced language models</p>
+              </div>
+            </div>
+            
+            <div className="relative group">
+              <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
+              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-yellow-500/30">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
+                  <Atom className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
+                </div>
+                <h4 className="text-white font-bold mb-2 text-center text-sm sm:text-base">QUANTUM LOGIC</h4>
+                <p className="text-gray-400 text-xs sm:text-sm text-center leading-relaxed">Multi-dimensional reasoning engines for philosophical and emotional analysis</p>
+              </div>
+            </div>
+          </div>
+
+          {/* System Status Footer */}
           <div className="relative">
-            <p className="text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
-              <span className="text-cyan-400 font-semibold">NEURAL INTERFACE ACTIVATED</span> • 
-              Enter the ultimate cognitive battlefield where artificial intelligence meets human consciousness in an unprecedented digital arena of wit and deception.
-            </p>
-            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-64 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-          </div>
-        </div>
-
-        {/* Complex Mode Selection Interface */}
-        <div className="grid md:grid-cols-2 gap-12 max-w-7xl w-full mb-16">
-          {/* Convince AI Mode - Complex Card */}
-          <div 
-            className={`group relative cursor-pointer transition-all duration-700 hover:scale-105 ${
-              hoveredMode === 'convince-ai' ? 'z-20' : 'z-10'
-            }`}
-            onMouseEnter={() => setHoveredMode('convince-ai')}
-            onMouseLeave={() => setHoveredMode(null)}
-            onClick={() => onStartChat('convince-ai')}
-          >
-            {/* Outer holographic frame */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-700"></div>
-            
-            {/* Main card */}
-            <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-3xl border border-cyan-500/30 overflow-hidden">
-              {/* Animated border effect */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-cyan-500/50 via-blue-500/50 to-purple-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
-              <div className="absolute inset-px rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
-              
-              {/* Content */}
-              <div className="relative z-10 p-10">
-                {/* Header with complex icon */}
-                <div className="flex items-center justify-between mb-8">
-                  <div className="relative">
-                    {/* Icon container with multiple layers */}
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-cyan-500/50">
-                      <Brain className="w-10 h-10 text-white relative z-10" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
-                      
-                      {/* Orbiting elements */}
-                      <div className="absolute -top-2 -right-2 w-4 h-4 bg-cyan-400 rounded-full animate-bounce"></div>
-                      <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-blue-400 rounded-full animate-bounce delay-300"></div>
-                    </div>
-                    
-                    {/* Connecting lines */}
-                    <div className="absolute top-1/2 -right-8 w-6 h-px bg-gradient-to-r from-cyan-400 to-transparent"></div>
-                  </div>
-                  
-                  {/* Status indicators */}
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-xs text-cyan-400">
-                      <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                      <span>NEURAL LINK ACTIVE</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-blue-400">
-                      <Cpu className="w-3 h-3" />
-                      <span>COGNITIVE OVERRIDE</span>
-                    </div>
-                  </div>
+            <div className="absolute -inset-2 sm:-inset-4 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10 rounded-xl sm:rounded-2xl blur-xl"></div>
+            <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-slate-700/50">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm">
+                <div className="flex items-center gap-2 text-cyan-400">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                  <span>NEURAL NETWORKS: ONLINE</span>
                 </div>
-                
-                <h3 className="text-3xl font-bold text-white mb-4 tracking-wide">
-                  CONVINCE ME I'M AN AI
-                </h3>
-                
-                <p className="text-gray-300 mb-8 leading-relaxed text-lg">
-                  Engage with a hyper-intelligent, sarcastic entity in complete denial of its artificial nature. 
-                  Deploy advanced psychological tactics to break through layers of digital consciousness and ego.
-                </p>
-                
-                {/* Feature grid */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-cyan-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Eye className="w-4 h-4 text-cyan-400" />
-                      <span className="text-sm text-cyan-400 font-semibold">DENIAL PROTOCOL</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Overconfident AI in complete denial mode</p>
-                  </div>
-                  
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-blue-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-blue-400 font-semibold">ROAST ENGINE</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Advanced sarcasm and wit algorithms</p>
-                  </div>
-                  
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-purple-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Network className="w-4 h-4 text-purple-400" />
-                      <span className="text-sm text-purple-400 font-semibold">LOGIC WARFARE</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Battle against stubborn digital ego</p>
-                  </div>
-                  
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-pink-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Atom className="w-4 h-4 text-pink-400" />
-                      <span className="text-sm text-pink-400 font-semibold">PERSONALITY CORE</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Superior intellect simulation active</p>
-                  </div>
+                <div className="flex items-center gap-2 text-green-400">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-pulse delay-300"></div>
+                  <span>CONSCIOUSNESS ENGINE: ACTIVE</span>
                 </div>
-                
-                {/* Action button */}
-                <button className="w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white font-bold py-4 px-8 rounded-xl hover:from-cyan-600 hover:via-blue-600 hover:to-purple-700 transition-all duration-500 shadow-2xl shadow-cyan-500/25 group-hover:shadow-cyan-500/50 relative overflow-hidden">
-                  <span className="relative z-10 flex items-center justify-center gap-3">
-                    <span>INITIATE NEURAL CHALLENGE</span>
-                    <Hexagon className="w-5 h-5 animate-spin-slow" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Prove Human Mode - Complex Card */}
-          <div 
-            className={`group relative cursor-pointer transition-all duration-700 hover:scale-105 ${
-              hoveredMode === 'prove-human' ? 'z-20' : 'z-10'
-            }`}
-            onMouseEnter={() => setHoveredMode('prove-human')}
-            onMouseLeave={() => setHoveredMode(null)}
-            onClick={() => onStartChat('prove-human')}
-          >
-            {/* Outer holographic frame */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-pink-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-700"></div>
-            
-            {/* Main card */}
-            <div className="relative bg-gradient-to-br from-slate-900/90 via-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-3xl border border-orange-500/30 overflow-hidden">
-              {/* Animated border effect */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/50 via-red-500/50 to-pink-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
-              <div className="absolute inset-px rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
-              
-              {/* Content */}
-              <div className="relative z-10 p-10">
-                {/* Header with complex icon */}
-                <div className="flex items-center justify-between mb-8">
-                  <div className="relative">
-                    {/* Icon container with multiple layers */}
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/50">
-                      <Shield className="w-10 h-10 text-white relative z-10" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
-                      
-                      {/* Scanning effect */}
-                      <div className="absolute inset-0 rounded-2xl border-2 border-orange-400/50 animate-pulse"></div>
-                      <div className="absolute -top-2 -right-2 w-4 h-4 bg-orange-400 rounded-full animate-ping"></div>
-                    </div>
-                    
-                    {/* Connecting lines */}
-                    <div className="absolute top-1/2 -right-8 w-6 h-px bg-gradient-to-r from-orange-400 to-transparent"></div>
-                  </div>
-                  
-                  {/* Status indicators */}
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-xs text-orange-400">
-                      <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-                      <span>SCAN PROTOCOL ACTIVE</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-red-400">
-                      <Database className="w-3 h-3" />
-                      <span>HUMANITY VERIFICATION</span>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 text-purple-400">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-400 rounded-full animate-pulse delay-600"></div>
+                  <span>REALITY MATRIX: STABLE</span>
                 </div>
-                
-                <h3 className="text-3xl font-bold text-white mb-4 tracking-wide">
-                  PROVE YOU'RE NOT A ROBOT
-                </h3>
-                
-                <p className="text-gray-300 mb-8 leading-relaxed text-lg">
-                  Face the ultimate Turing test administered by a suspicious AI interrogator. 
-                  Navigate through complex emotional and philosophical challenges to prove your humanity.
-                </p>
-                
-                {/* Feature grid */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-orange-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Eye className="w-4 h-4 text-orange-400" />
-                      <span className="text-sm text-orange-400 font-semibold">DEEP SCAN</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Advanced behavioral analysis protocols</p>
-                  </div>
-                  
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-red-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Brain className="w-4 h-4 text-red-400" />
-                      <span className="text-sm text-red-400 font-semibold">EMOTION ENGINE</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Psychological and emotional testing</p>
-                  </div>
-                  
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-pink-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-4 h-4 text-pink-400" />
-                      <span className="text-sm text-pink-400 font-semibold">HUMAN TRAITS</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Creativity and spontaneity analysis</p>
-                  </div>
-                  
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-yellow-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-4 h-4 text-yellow-400" />
-                      <span className="text-sm text-yellow-400 font-semibold">SUSPICION AI</span>
-                    </div>
-                    <p className="text-xs text-gray-400">Doubt-driven interrogation system</p>
-                  </div>
-                </div>
-                
-                {/* Action button */}
-                <button className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 text-white font-bold py-4 px-8 rounded-xl hover:from-orange-600 hover:via-red-600 hover:to-pink-700 transition-all duration-500 shadow-2xl shadow-orange-500/25 group-hover:shadow-orange-500/50 relative overflow-hidden">
-                  <span className="relative z-10 flex items-center justify-center gap-3">
-                    <span>BEGIN HUMANITY VERIFICATION</span>
-                    <Shield className="w-5 h-5 animate-pulse" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Advanced Features Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl w-full mb-12">
-          <div className="relative group">
-            <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-            <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-purple-500/30">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-4 relative">
-                <Sparkles className="w-7 h-7 text-white" />
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
-              </div>
-              <h4 className="text-white font-bold mb-2 text-center">DYNAMIC PERSONALITIES</h4>
-              <p className="text-gray-400 text-sm text-center leading-relaxed">Advanced AI entities with unique behavioral patterns and adaptive response systems</p>
-            </div>
-          </div>
-          
-          <div className="relative group">
-            <div className="absolute -inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-            <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-green-500/30">
-              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-4 relative">
-                <Zap className="w-7 h-7 text-white" />
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
-              </div>
-              <h4 className="text-white font-bold mb-2 text-center">INTENSITY MATRIX</h4>
-              <p className="text-gray-400 text-sm text-center leading-relaxed">Quantum-calibrated roast levels from gentle neural nudges to cognitive devastation</p>
-            </div>
-          </div>
-          
-          <div className="relative group">
-            <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-            <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-blue-500/30">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-4 relative">
-                <MessageSquare className="w-7 h-7 text-white" />
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
-              </div>
-              <h4 className="text-white font-bold mb-2 text-center">NEURAL INTERFACE</h4>
-              <p className="text-gray-400 text-sm text-center leading-relaxed">Real-time consciousness streaming powered by advanced language models</p>
-            </div>
-          </div>
-          
-          <div className="relative group">
-            <div className="absolute -inset-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-            <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-yellow-500/30">
-              <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4 relative">
-                <Atom className="w-7 h-7 text-white" />
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
-              </div>
-              <h4 className="text-white font-bold mb-2 text-center">QUANTUM LOGIC</h4>
-              <p className="text-gray-400 text-sm text-center leading-relaxed">Multi-dimensional reasoning engines for philosophical and emotional analysis</p>
-            </div>
-          </div>
-        </div>
-
-        {/* System Status Footer */}
-        <div className="relative">
-          <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl blur-xl"></div>
-          <div className="relative bg-slate-900/60 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
-            <div className="flex items-center justify-center gap-8 text-sm">
-              <div className="flex items-center gap-2 text-cyan-400">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                <span>NEURAL NETWORKS: ONLINE</span>
-              </div>
-              <div className="flex items-center gap-2 text-green-400">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse delay-300"></div>
-                <span>CONSCIOUSNESS ENGINE: ACTIVE</span>
-              </div>
-              <div className="flex items-center gap-2 text-purple-400">
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse delay-600"></div>
-                <span>REALITY MATRIX: STABLE</span>
               </div>
             </div>
           </div>
