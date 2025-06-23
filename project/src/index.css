@@ -24,6 +24,30 @@
   *::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(to bottom, #0891b2, #7c3aed);
   }
+
+  /* Mobile touch improvements */
+  @media (hover: none) and (pointer: coarse) {
+    button {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    
+    textarea, input {
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+  }
+
+  /* Smooth scrolling for mobile */
+  html {
+    scroll-behavior: smooth;
+    -webkit-touch-callout: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Better mobile scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @layer components {

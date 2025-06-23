@@ -327,3 +327,33 @@ export const generateChatSummary = (messages: Message[], mode: ChatMode) => {
     endTime: messages[messages.length - 1]?.timestamp
   };
 };
+
+// Generate chat name based on first message using AI
+export const generateChatName = async (firstMessage: string, mode: ChatMode): Promise<string> => {
+  try {
+    const systemPrompt = {
+      role: 'system' as const,
+      content: `Generate a short, creative 2-4 word title for a chat conversation. The chat mode is "${mode}". Be concise and descriptive. Don't use quotes or special characters. Examples: "Debate About Reality", "Prove My Humanity", "AI Ethics Discussion"`
+    };
+
+    const userPrompt = {
+      role: 'user' as const,
+      content: `Create a title for this conversation starter: "${firstMessage}"`
+    };
+
+    const response = await sendMessage([systemPrompt, userPrompt], mode, 5);
+    
+    // Clean up the response and limit length
+    const cleanName = response
+      .replace(/['"]/g, '') // Remove quotes
+      .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+      .trim()
+      .substring(0, 30); // Limit to 30 characters
+    
+    return cleanName || 'Untitled Chat';
+  } catch (error) {
+    console.error('Failed to generate chat name:', error);
+    // Fallback names based on mode
+    return mode === 'convince-ai' ? 'Convince AI Chat' : 'Prove Human Chat';
+  }
+};

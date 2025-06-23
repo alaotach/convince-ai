@@ -8,9 +8,18 @@ export interface Message {
 
 export type ChatMode = 'convince-ai' | 'prove-human';
 
-export interface ChatState {
+export interface ChatSession {
+  id: string;
+  name: string;
   messages: Message[];
-  isLoading: boolean;
   mode: ChatMode;
   roastLevel: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ChatState {
+  currentChat: ChatSession | null;
+  chatHistory: ChatSession[];
+  isLoading: boolean;
 }
