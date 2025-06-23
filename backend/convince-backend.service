@@ -1,0 +1,29 @@
+[Unit]
+Description=Convince AI Backend
+After=network.target
+
+[Service]
+Type=exec
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/convince/backend
+Environment=PATH=/opt/convince/venv/bin
+Environment=PYTHONPATH=/opt/convince/backend
+ExecStart=/opt/convince/venv/bin/gunicorn -c gunicorn.conf.py app:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=convince-backend
+
+# Security settings
+NoNewPrivileges=true
+DynamicUser=false
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/convince/backend
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

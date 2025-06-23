@@ -8,4 +8,5 @@ gevent
 flask-limiter
 redis
 requests
-concurrent-futures
+aiohttp
+asyncio

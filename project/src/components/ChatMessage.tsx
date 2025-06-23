@@ -72,11 +72,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   <Cpu className="w-3 h-3 opacity-60 animate-spin-slow" />
-                  <span className="text-xs opacity-60">PROCESSING</span>
+                  <span className="text-xs opacity-60">TYPING</span>
                 </div>
               </div>
             ) : (
-              <p className="whitespace-pre-wrap leading-relaxed text-base">{message.content}</p>
+              <p className="whitespace-pre-wrap leading-relaxed text-base">{message.content.trim()}</p>
             )}
           </div>
           
