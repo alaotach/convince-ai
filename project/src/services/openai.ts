@@ -1,7 +1,7 @@
 import { ChatMode } from '../types/chat';
 import { Message } from '../types/chat';
 
-const API_BASE_URL = 'http://127.0.0.1:4343/api';
+const API_BASE_URL = 'https://convince.dotverse.tech/api';
 
 export const sendMessage = async (
   messages: Array<{role: 'user' | 'assistant' | 'system', content: string}>,
