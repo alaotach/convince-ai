@@ -83,7 +83,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
               {/* Glowing background */}
               <div className="absolute -inset-8 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl blur-3xl animate-pulse"></div>
               
-              <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 sm:p-12 lg:p-16 border border-slate-700/50 shadow-2xl">
+              <div className="relative bg-slate-900/95 rounded-3xl p-8 sm:p-12 lg:p-16 border border-slate-700/50 shadow-2xl">
                 {/* Title */}
                 <div className="flex flex-col items-center space-y-6 sm:space-y-8 mb-8 sm:mb-12">
                   <div className="flex items-center space-x-4 sm:space-x-8">
@@ -191,9 +191,9 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
               <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/30 via-blue-500/30 to-purple-500/30 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-700 animate-pulse"></div>
               
               {/* Main card with enhanced styling */}
-              <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-2xl rounded-3xl border border-cyan-500/40 overflow-hidden shadow-2xl">
+              <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-3xl border border-cyan-500/40 overflow-hidden shadow-2xl">
                 {/* Enhanced animated border effect */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-cyan-500/50 via-blue-500/50 to-purple-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-cyan-500/50 via-blue-500/50 to-purple-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 <div className="absolute inset-px rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
                 
                 {/* Top accent bar */}
@@ -346,9 +346,9 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
               <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/30 via-red-500/30 to-pink-500/30 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-700 animate-pulse"></div>
               
               {/* Main card with enhanced styling */}
-              <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-2xl rounded-3xl border border-orange-500/40 overflow-hidden shadow-2xl">
+              <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-3xl border border-orange-500/40 overflow-hidden shadow-2xl">
                 {/* Enhanced animated border effect */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/50 via-red-500/50 to-pink-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-orange-500/50 via-red-500/50 to-pink-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 <div className="absolute inset-px rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
                 
                 {/* Top accent bar */}
@@ -494,7 +494,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl w-full mb-8 sm:mb-12">
             <div className="relative group">
               <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-purple-500/30">
+              <div className="relative bg-slate-900/90 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-purple-500/30">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
@@ -506,7 +506,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
             
             <div className="relative group">
               <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-500/30">
+              <div className="relative bg-slate-900/90 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-500/30">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
                   <Zap className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
@@ -518,7 +518,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
             
             <div className="relative group">
               <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-500/30">
+              <div className="relative bg-slate-900/90 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-500/30">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
                   <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
@@ -530,7 +530,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
             
             <div className="relative group">
               <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl sm:rounded-2xl blur-lg group-hover:blur-xl transition-all duration-500"></div>
-              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-yellow-500/30">
+              <div className="relative bg-slate-900/90 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-yellow-500/30">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 relative">
                   <Atom className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-white" />
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg sm:rounded-xl"></div>
