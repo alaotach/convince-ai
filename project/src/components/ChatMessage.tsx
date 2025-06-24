@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { User, Bot, Cpu, Eye, Zap, Copy, Check } from 'lucide-react';
-import { Message } from '../types/chat';
+import { Message, ChatMode } from '../types/chat';
 
 interface ChatMessageProps {
   message: Message;
+  mode: ChatMode;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
   const isUser = message.sender === 'user';
   const [isCopied, setIsCopied] = useState(false);
   
@@ -52,7 +53,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         }`}></div>
         
         {/* Main avatar */}
-        <div className={`relative w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-110 ${
+        <div className={`relative w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 group-hover:scale-110 overflow-hidden ${
           isUser 
             ? 'bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600 shadow-cyan-500/50' 
             : 'bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 shadow-orange-500/50'
@@ -60,7 +61,21 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           {isUser ? (
             <User className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
           ) : (
-            <Bot className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
+            <img 
+              src={mode === 'convince-ai' ? "/assets/roxx.png" : "/assets/agent_wolf.png"} 
+              alt={mode === 'convince-ai' ? "Roxx" : "Agent Wolf"} 
+              className="w-full h-full object-cover rounded-full"
+              onError={(e) => {
+                // Fallback to Bot icon if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const botIcon = target.nextElementSibling as HTMLElement;
+                if (botIcon) botIcon.style.display = 'block';
+              }}
+            />
+          )}
+          {!isUser && (
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white hidden" />
           )}
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-full"></div>
         </div>

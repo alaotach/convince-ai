@@ -47,7 +47,7 @@ export const RoastLevelSlider: React.FC<RoastLevelSliderProps> = ({ value, onCha
       <div className={`absolute -inset-2 sm:-inset-4 bg-gradient-to-r ${roastData.color} opacity-20 rounded-2xl sm:rounded-3xl blur-2xl`}></div>
       
       {/* Main container */}
-      <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-700/50 shadow-2xl">
+      <div className="relative bg-slate-900/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-700/50 shadow-2xl">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
           <div className="flex items-center gap-3 sm:gap-4">

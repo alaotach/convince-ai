@@ -541,6 +541,88 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
+          {/* YouTube Live Stream Challenge Section */}
+          <div className="relative mb-8 sm:mb-12">
+            {/* Pulsing glow background */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-red-500/30 via-yellow-500/30 to-red-500/30 rounded-3xl blur-3xl animate-pulse"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400/20 via-red-400/20 to-yellow-400/20 rounded-2xl blur-xl animate-pulse delay-500"></div>
+            
+            {/* Main challenge card */}
+            <div className="relative bg-gradient-to-br from-slate-900/95 via-red-900/20 to-slate-900/95 rounded-3xl border-2 border-yellow-400/60 overflow-hidden shadow-2xl">
+              {/* Animated border effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/30 via-red-400/30 to-yellow-400/30 rounded-3xl opacity-0 hover:opacity-100 transition-opacity duration-700"></div>
+              <div className="absolute inset-px bg-gradient-to-br from-slate-900 via-red-900/10 to-slate-900 rounded-3xl"></div>
+              
+              {/* Top accent bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-red-400 to-yellow-400 animate-pulse"></div>
+              
+              {/* Content */}
+              <div className="relative p-6 sm:p-8 lg:p-10 text-center">
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-red-500/20 rounded-full px-4 py-2 mb-6 border border-yellow-400/30">
+                  <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                  <span className="text-yellow-400 font-bold text-sm uppercase tracking-wider">🔴 LIVE CHALLENGE</span>
+                </div>
+                
+                {/* Title */}
+                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-red-400 to-yellow-400 mb-4 sm:mb-6 animate-glow">
+                  BEAT ME ON YOUTUBE LIVE!
+                </h3>
+                
+                {/* Challenge description */}
+                <div className="bg-slate-800/50 rounded-2xl p-4 sm:p-6 mb-6 border border-yellow-400/20">
+                  <p className="text-lg sm:text-xl text-white font-bold mb-3">
+                    🏆 THE ULTIMATE CHALLENGE 🏆
+                  </p>
+                  <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-4">
+                    Think you can outsmart our AI at the highest difficulty? Join our YouTube live streams and prove it!
+                  </p>
+                  <div className="bg-gradient-to-r from-red-500/20 to-yellow-500/20 rounded-xl p-4 border border-red-400/30">
+                    <p className="text-red-300 font-bold text-base sm:text-lg mb-2">
+                      ⚡ BEAT THE AI AT LEVEL 10 ⚡
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Successfully convince our AI or prove your humanity at maximum difficulty during a live stream and win rewards!
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Reward info */}
+                <div className="bg-gradient-to-r from-yellow-500/10 via-red-500/10 to-yellow-500/10 rounded-2xl p-4 sm:p-6 mb-6 border border-yellow-400/40">
+                  <div className="flex items-center justify-center gap-3 mb-3">
+                    <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse" />
+                    <span className="text-yellow-400 font-bold text-lg sm:text-xl">GET REWARDED!</span>
+                    <Sparkles className="w-6 h-6 text-yellow-400 animate-pulse" />
+                  </div>
+                  <p className="text-gray-300 text-sm sm:text-base mb-4">
+                    Winners receive exclusive rewards and recognition! 🎁
+                  </p>
+                  
+                  {/* Contact info */}
+                  <div className="bg-slate-900/80 rounded-xl p-4 border border-cyan-400/30">
+                    <p className="text-cyan-400 font-bold mb-2">📧 CLAIM YOUR REWARD:</p>
+                    <div className="bg-slate-800 rounded-lg px-4 py-3 border border-cyan-400/20">
+                      <code className="text-cyan-300 text-sm sm:text-base break-all">
+                        alaotach@gmail.com
+                      </code>
+                    </div>
+                    <p className="text-gray-400 text-xs mt-2">
+                      Contact us after your live stream victory to claim your reward!
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Call to action */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <div className="text-center">
+                    <p className="text-yellow-400 font-bold text-sm mb-1">READY FOR THE CHALLENGE?</p>
+                    <p className="text-gray-400 text-xs">Join our live streams and show your skills!</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* System Status Footer */}
           <div className="relative">
             <div className="absolute -inset-2 sm:-inset-4 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10 rounded-xl sm:rounded-2xl blur-xl"></div>

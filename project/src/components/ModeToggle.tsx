@@ -14,7 +14,7 @@ export const ModeToggle: React.FC<ModeToggleProps> = ({ mode, onModeChange }) =>
       <div className="absolute -inset-2 sm:-inset-4 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-orange-500/10 rounded-2xl sm:rounded-3xl blur-2xl"></div>
       
       {/* Main container */}
-      <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-2 sm:p-3 border border-slate-700/50 shadow-2xl">
+      <div className="relative bg-slate-900/80 rounded-2xl sm:rounded-3xl p-2 sm:p-3 border border-slate-700/50 shadow-2xl">
         {/* Animated background indicator */}
         <div 
           className={`absolute top-2 sm:top-3 h-[calc(100%-16px)] sm:h-[calc(100%-24px)] bg-gradient-to-r rounded-xl sm:rounded-2xl transition-all duration-500 shadow-lg ${
