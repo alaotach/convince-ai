@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, Bot, Cpu, Eye, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Bot, Cpu, Eye, Zap, Copy, Check } from 'lucide-react';
 import { Message } from '../types/chat';
 
 interface ChatMessageProps {
@@ -8,6 +8,18 @@ interface ChatMessageProps {
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.sender === 'user';
+  const [isCopied, setIsCopied] = useState(false);
+  
+  // Function to copy message content to clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
   
   // Function to render text with bold formatting for *text*
   const renderFormattedText = (text: string) => {
@@ -125,6 +137,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             }`}></div>
             <span className="font-mono text-xs">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
+          
+          {/* Copy button */}
+          {!message.isTyping && (
+            <button
+              onClick={copyToClipboard}
+              className={`p-1 rounded-md transition-all duration-200 hover:bg-slate-700/50 group/copy ${
+                isCopied ? 'text-green-400' : 'text-gray-500 hover:text-gray-300'
+              }`}
+              title={isCopied ? 'Copied!' : 'Copy message'}
+            >
+              {isCopied ? (
+                <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+              ) : (
+                <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
