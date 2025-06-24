@@ -34,7 +34,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       <div className="absolute -inset-2 sm:-inset-4 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl sm:rounded-3xl blur-2xl"></div>
       
       {/* Main container */}
-      <div className="relative bg-slate-900/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-slate-700/50 shadow-2xl overflow-hidden">
+      <div className="relative bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-700/50 shadow-2xl overflow-hidden">
         {/* Top scanning line */}
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent animate-pulse"></div>
         

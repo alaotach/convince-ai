@@ -91,7 +91,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
   return (
-    <div className={`bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 transition-all duration-300 ${
+    <div className={`bg-slate-900 border-r border-slate-700/50 transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-80 sm:w-80'
     } h-full flex flex-col`}>
       {/* Header */}

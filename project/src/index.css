@@ -25,6 +25,17 @@
     background: linear-gradient(to bottom, #0891b2, #7c3aed);
   }
 
+  /* Prevent body scrolling and constrain to viewport */
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  #root {
+    height: 100vh;
+    overflow: hidden;
+  }
+
   /* Mobile touch improvements */
   @media (hover: none) and (pointer: coarse) {
     button {
@@ -161,6 +172,28 @@
   /* Gradient utilities */
   .bg-gradient-radial {
     background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+  
+  /* Custom scrollbar utilities */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-track-slate-800::-webkit-scrollbar-track {
+    background-color: rgb(30 41 59);
+  }
+  
+  .scrollbar-thumb-slate-600::-webkit-scrollbar-thumb {
+    background-color: rgb(71 85 105);
+    border-radius: 4px;
+  }
+  
+  .hover\:scrollbar-thumb-slate-500:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(100 116 139);
   }
   
   /* Complex hover effects */

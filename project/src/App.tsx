@@ -24,6 +24,25 @@ function App() {
     updateChatSettings
   } = useChat();
 
+  // Manage body overflow based on homepage visibility
+  useEffect(() => {
+    if (showHomepage) {
+      // Allow body to scroll for homepage  
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+    } else {
+      // Hide body overflow when in chat mode
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    }
+
+    // Cleanup function to restore default state
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+    };
+  }, [showHomepage]);
+
   // Initialize homepage visibility based on existing chats
   useEffect(() => {
     // If there are existing chats but no current chat, select the most recent one
@@ -84,7 +103,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex relative">
+    <div className="h-screen bg-slate-900 text-white flex relative overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {isMobileSidebarOpen && (
         <div 
@@ -96,7 +115,7 @@ function App() {
       {/* Sidebar */}
       <div className={`${
         isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 fixed lg:relative z-50 lg:z-auto transition-transform duration-300 ease-in-out`}>
+      } lg:translate-x-0 fixed lg:relative z-50 lg:z-auto transition-transform duration-300 ease-in-out h-full`}>
         <ChatSidebar
           chatHistory={chatHistory}
           currentChat={currentChat}
@@ -109,7 +128,7 @@ function App() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {currentChat ? (
           <>
             <Header
@@ -120,7 +139,7 @@ function App() {
               mode={currentChat.mode}
               roastLevel={currentChat.roastLevel}
             />
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ChatContainer
                 messages={currentChat.messages}
                 onSendMessage={sendUserMessage}
@@ -131,7 +150,7 @@ function App() {
           </>
         ) : (
           /* No chat selected state */
-          <div className="flex-1 flex items-center justify-center p-4">
+          <div className="flex-1 flex items-center justify-center p-4 h-full overflow-hidden">
             <div className="text-center max-w-md mx-auto">
               <div className="text-4xl sm:text-6xl mb-6">💬</div>
               <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">No Chat Selected</h2>

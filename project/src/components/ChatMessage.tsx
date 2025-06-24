@@ -9,6 +9,24 @@ interface ChatMessageProps {
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.sender === 'user';
   
+  // Function to render text with bold formatting for *text*
+  const renderFormattedText = (text: string) => {
+    const parts = text.split(/(\*[^*]+\*)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+        // Remove asterisks and make bold
+        const boldText = part.slice(1, -1);
+        return (
+          <strong key={index} className="font-bold text-white">
+            {boldText}
+          </strong>
+        );
+      }
+      return part;
+    });
+  };
+  
   return (
     <div className={`flex gap-2 sm:gap-4 mb-4 sm:mb-6 ${isUser ? 'flex-row-reverse' : 'flex-row'} group`}>
       {/* Complex avatar */}
@@ -57,10 +75,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       {/* Message content */}
       <div className={`max-w-[80%] sm:max-w-[75%] ${isUser ? 'text-right' : 'text-left'} relative`}>
         {/* Message bubble */}
-        <div className={`relative inline-block px-3 py-2 sm:px-4 sm:py-3 lg:px-6 lg:py-4 rounded-xl sm:rounded-2xl backdrop-blur-xl border transition-all duration-500 group-hover:shadow-2xl ${
+        <div className={`relative inline-block px-3 py-2 sm:px-4 sm:py-3 lg:px-6 lg:py-4 rounded-xl sm:rounded-2xl border transition-all duration-500 group-hover:shadow-2xl ${
           isUser
-            ? 'bg-gradient-to-br from-cyan-500/90 via-blue-500/90 to-purple-600/90 text-white rounded-br-lg shadow-2xl shadow-cyan-500/30 border-cyan-400/30'
-            : 'bg-slate-800/90 text-white rounded-bl-lg border-slate-700/50 shadow-2xl shadow-slate-900/50'
+            ? 'bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600 text-white rounded-br-lg shadow-2xl shadow-cyan-500/30 border-cyan-400/30'
+            : 'bg-slate-800 text-white rounded-bl-lg border-slate-700/50 shadow-2xl shadow-slate-900/50'
         } ${message.isTyping ? 'animate-pulse' : ''} overflow-hidden`}>
           
           {/* Background effects */}
@@ -84,7 +102,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 </div>
               </div>
             ) : (
-              <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base">{message.content.trim()}</p>
+              <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base">
+                {renderFormattedText(message.content.trim())}
+              </p>
             )}
           </div>
           

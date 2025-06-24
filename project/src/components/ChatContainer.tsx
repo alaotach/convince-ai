@@ -49,14 +49,15 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   const EmptyIcon = emptyState.icon;
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full bg-slate-900 relative max-h-full">
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-400/30 to-transparent"></div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 relative z-10">
+      {/* Messages Container - Fixed height with scrolling */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 relative z-10 min-h-0 max-h-full scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
         {messages.length === 0 ? (
           <div className="text-center py-8 sm:py-12 lg:py-16 relative">
             {/* Complex empty state */}
@@ -104,7 +105,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                 <div className="absolute bottom-0 right-0 w-4 h-4 sm:w-6 sm:h-6 border-b-2 border-r-2 border-cyan-400/50 rounded-br-lg"></div>
               </div>
               
-              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-700/50 shadow-2xl">
+              <div className="relative bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-700/50 shadow-2xl">
                 {/* Title */}
                 <div className={`text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r ${emptyState.color} bg-clip-text text-transparent mb-3 sm:mb-4 tracking-wider`}>
                   {emptyState.title}
@@ -141,7 +142,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         <div ref={messagesEndRef} />
       </div>
       
-      <div className="p-4 sm:p-6 lg:p-8 pt-0 relative z-10">
+      {/* Input Container - Fixed at bottom */}
+      <div className="flex-shrink-0 p-4 sm:p-6 lg:p-8 pt-4 bg-slate-900 border-t border-slate-700/50 relative z-10 shadow-lg shadow-slate-900/50">
         <ChatInput 
           onSendMessage={onSendMessage} 
           isLoading={isLoading} 
