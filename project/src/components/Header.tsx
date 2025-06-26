@@ -21,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   roastLevel = 5
 }) => {
   return (
-    <div className="p-3 sm:p-4 flex justify-between items-center bg-slate-900 border-b border-slate-700/50">
+    <div className="chat-header p-3 sm:p-4 flex justify-between items-center bg-slate-900 border-b border-slate-700/50">
       <div className="flex items-center gap-2 sm:gap-4">
         {/* Mobile sidebar toggle */}
         {onToggleMobileSidebar && (

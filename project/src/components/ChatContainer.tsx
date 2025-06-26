@@ -49,7 +49,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   const EmptyIcon = emptyState.icon;
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 relative max-h-full">
+    <div className="chat-container flex flex-col h-full bg-slate-900 relative max-h-full">
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
@@ -57,7 +57,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       </div>
       
       {/* Messages Container - Fixed height with scrolling */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 relative z-10 min-h-0 max-h-full scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
+      <div className="chat-messages-area flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 relative z-10 min-h-0 max-h-full scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
         {messages.length === 0 ? (
           <div className="text-center py-8 sm:py-12 lg:py-16 relative">
             {/* Complex empty state */}
@@ -117,20 +117,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                 </p>
                 
                 {/* System status */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-700/30">
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-green-400">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span>NEURAL LINK ACTIVE</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-cyan-400">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-pulse delay-300"></div>
-                    <span>CONSCIOUSNESS ONLINE</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-purple-400">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-400 rounded-full animate-pulse delay-600"></div>
-                    <span>REALITY MATRIX STABLE</span>
-                  </div>
-                </div>
+                
               </div>
             </div>
           </div>
@@ -143,7 +130,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       </div>
       
       {/* Input Container - Fixed at bottom */}
-      <div className="flex-shrink-0 p-4 sm:p-6 lg:p-8 pt-4 bg-slate-900 border-t border-slate-700/50 relative z-10 shadow-lg shadow-slate-900/50">
+      <div className="chat-input-container flex-shrink-0 p-4 sm:p-6 lg:p-8 pt-4 bg-slate-900 border-t border-slate-700/50 relative z-10 shadow-lg shadow-slate-900/50">
         <ChatInput 
           onSendMessage={onSendMessage} 
           isLoading={isLoading} 

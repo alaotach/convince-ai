@@ -55,7 +55,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               
               {/* Character counter */}
               <div className="absolute bottom-0 right-0 text-xs text-gray-500 font-mono">
-                {message.length}/500
+                {message.length}/2500
               </div>
             </div>
             
@@ -103,7 +103,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
           
           {/* Status bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-700/30 gap-2 sm:gap-0">
+          <div className="flex max-md:hidden flex-col sm:flex-row items-start sm:items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-700/30 gap-2 sm:gap-0">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-pulse"></div>

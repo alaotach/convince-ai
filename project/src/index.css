@@ -33,7 +33,26 @@
   
   #root {
     height: 100vh;
+    height: calc(var(--vh, 1vh) * 100); /* Use custom property for accurate mobile height */
+    height: 100dvh; /* Use dynamic viewport height on supported browsers */
     /* Don't set overflow here - let JavaScript control it */
+  }
+
+  /* Mobile viewport fixes */
+  @supports (height: 100dvh) {
+    #root {
+      height: 100dvh;
+    }
+  }
+
+  /* Mobile viewport fixes - basic responsive setup */
+  @media (max-width: 768px) {    
+    #root {
+      /* Let JavaScript control height and positioning */
+      min-height: 100vh;
+      min-height: calc(var(--vh, 1vh) * 100);
+      min-height: 100dvh;
+    }
   }
 
   /* Mobile touch improvements */
@@ -290,5 +309,90 @@
   .chat-mode {
     height: 100vh;
     overflow: hidden;
+  }
+
+  /* Mobile browser UI safe areas */
+  @media (max-width: 768px) {
+    /* Sidebar should be above everything else on mobile */
+    .sidebar-mobile {
+      z-index: 1100 !important;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Ensure header is always visible above mobile browser UI */
+    .chat-header {
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      background: #0f172a;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    
+    /* Chat container should account for mobile browser UI */
+    .chat-container {
+      height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      height: calc(var(--vh, 1vh) * 100 - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Ensure input area is always accessible and above mobile browser UI but below sidebar */
+    .chat-input-container {
+      position: fixed;
+      bottom: 0;
+      bottom: env(safe-area-inset-bottom, 0px);
+      left: 0;
+      right: 0;
+      width: 100vw;
+      z-index: 1000;
+      background: #0f172a;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+      transform: none !important;
+      transition: none !important;
+    }
+    
+    /* Adjust messages container to account for fixed input */
+    .chat-messages-area {
+      padding-bottom: 140px; /* Increased space for fixed input container */
+      margin-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    
+    /* Ensure main chat area takes full width on mobile */
+    .mobile-chat-main {
+      width: 100vw;
+      margin-left: 0;
+      position: relative;
+    }
+  }
+
+  /* iOS viewport height fixes */
+  @supports (-webkit-touch-callout: none) {
+    #root {
+      height: -webkit-fill-available;
+    }
+  }
+
+  /* Safe area handling for modern mobile browsers */
+  @media (max-width: 768px) {
+    body {
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+  }
+
+  /* Mobile overlay when sidebar is open */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    backdrop-filter: blur(2px);
   }
 }

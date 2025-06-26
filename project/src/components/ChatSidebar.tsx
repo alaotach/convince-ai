@@ -6,7 +6,8 @@ import {
   Trash2, 
   ChevronLeft, 
   ChevronRight,
-  Calendar
+  Calendar,
+  X
 } from 'lucide-react';
 import { ChatSession, ChatMode } from '../types/chat';
 
@@ -18,6 +19,7 @@ interface ChatSidebarProps {
   onDeleteChat: (chatId: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onCloseMobile?: () => void;
 }
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -27,7 +29,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectChat,
   onDeleteChat,
   isCollapsed,
-  onToggleCollapse
+  onToggleCollapse,
+  onCloseMobile
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<ChatMode | 'all'>('all');
@@ -93,62 +96,79 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   return (
     <div className={`bg-slate-900 border-r border-slate-700/50 transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-80 sm:w-80'
-    } h-full flex flex-col`}>
+    } h-full flex flex-col relative`}>
       {/* Header */}
-      <div className="p-3 sm:p-4 border-b border-slate-700/50">
+      <div className="p-4 sm:p-4 border-b border-slate-700/50 bg-slate-900/95 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <h2 className="text-base sm:text-lg font-bold text-white">Chat History</h2>
+            <h2 className="text-lg sm:text-lg font-bold text-white">Chat History</h2>
           )}
-          <button
-            onClick={onToggleCollapse}
-            className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors hidden lg:block"
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Mobile close button */}
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors lg:hidden"
+                title="Close sidebar"
+              >
+                <X size={20} />
+              </button>
+            )}
+            {/* Desktop collapse button */}
+            <button
+              onClick={onToggleCollapse}
+              className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors hidden lg:block"
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            </button>
+          </div>
         </div>
 
         {!isCollapsed && (
           <>
             {/* New Chat Buttons */}
-            <div className="mt-3 sm:mt-4 space-y-2">
+            <div className="mt-4 sm:mt-4 space-y-3">
               <button
                 onClick={() => onNewChat('convince-ai')}
-                className="w-full p-2 sm:p-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 
-                         rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 group text-sm sm:text-base"
+                className="w-full p-3 sm:p-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 
+                         rounded-xl transition-all duration-200 flex items-center gap-3 sm:gap-3 group text-base sm:text-base font-medium
+                         touch-manipulation active:scale-95"
               >
-                <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
-                <span className="font-medium">New Convince AI</span>
+                <Plus size={18} className="sm:w-[18px] sm:h-[18px]" />
+                <span>New Convince AI</span>
               </button>
               <button
                 onClick={() => onNewChat('prove-human')}
-                className="w-full p-2 sm:p-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 
-                         rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 group text-sm sm:text-base"
+                className="w-full p-3 sm:p-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 
+                         rounded-xl transition-all duration-200 flex items-center gap-3 sm:gap-3 group text-base sm:text-base font-medium
+                         touch-manipulation active:scale-95"
               >
-                <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
-                <span className="font-medium">New Prove Human</span>
+                <Plus size={18} className="sm:w-[18px] sm:h-[18px]" />
+                <span>New Prove Human</span>
               </button>
             </div>
 
             {/* Search and Filter */}
-            <div className="mt-3 sm:mt-4 space-y-2">
+            <div className="mt-4 sm:mt-4 space-y-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={14} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
                 <input
                   type="text"
                   placeholder="Search chats..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 sm:pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-600/50 rounded-lg 
-                           text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500/50 text-sm"
+                  className="w-full pl-10 sm:pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl 
+                           text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500/50 text-base
+                           touch-manipulation"
                 />
               </div>
               
-              <div className="flex gap-1 sm:gap-2">
+              <div className="flex gap-2 sm:gap-2">
                 <button
                   onClick={() => setFilterMode('all')}
-                  className={`flex-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-colors ${
+                  className={`flex-1 px-3 sm:px-3 py-2.5 rounded-xl text-sm sm:text-sm transition-colors font-medium
+                           touch-manipulation active:scale-95 ${
                     filterMode === 'all' 
                       ? 'bg-slate-700 text-white' 
                       : 'bg-slate-800/50 text-slate-400 hover:text-white'
@@ -158,7 +178,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterMode('convince-ai')}
-                  className={`flex-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-colors ${
+                  className={`flex-1 px-3 sm:px-3 py-2.5 rounded-xl text-sm sm:text-sm transition-colors font-medium
+                           touch-manipulation active:scale-95 ${
                     filterMode === 'convince-ai' 
                       ? 'bg-cyan-600 text-white' 
                       : 'bg-slate-800/50 text-slate-400 hover:text-white'
@@ -168,7 +189,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterMode('prove-human')}
-                  className={`flex-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition-colors ${
+                  className={`flex-1 px-3 sm:px-3 py-2.5 rounded-xl text-sm sm:text-sm transition-colors font-medium
+                           touch-manipulation active:scale-95 ${
                     filterMode === 'prove-human' 
                       ? 'bg-orange-600 text-white' 
                       : 'bg-slate-800/50 text-slate-400 hover:text-white'
@@ -183,26 +205,28 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
         {isCollapsed ? (
           /* Collapsed view - show only current chat and new chat buttons */
-          <div className="p-2 space-y-2">
+          <div className="p-3 space-y-3">
             <button
               onClick={() => onNewChat('convince-ai')}
-              className="w-full p-3 bg-cyan-600/20 hover:bg-cyan-600/30 rounded-lg transition-colors"
+              className="w-full p-4 bg-cyan-600/20 hover:bg-cyan-600/30 rounded-xl transition-colors
+                       touch-manipulation active:scale-95"
               title="New Convince AI Chat"
             >
-              <Plus size={20} />
+              <Plus size={22} />
             </button>
             <button
               onClick={() => onNewChat('prove-human')}
-              className="w-full p-3 bg-orange-600/20 hover:bg-orange-600/30 rounded-lg transition-colors"
+              className="w-full p-4 bg-orange-600/20 hover:bg-orange-600/30 rounded-xl transition-colors
+                       touch-manipulation active:scale-95"
               title="New Prove Human Chat"
             >
-              <Plus size={20} />
+              <Plus size={22} />
             </button>
             {currentChat && (
-              <div className="w-full p-3 bg-slate-700/50 rounded-lg">
+              <div className="w-full p-4 bg-slate-700/50 rounded-xl">
                 <div className="text-center text-2xl">
                   {getModeIcon(currentChat.mode)}
                 </div>
@@ -211,19 +235,20 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
         ) : (
           /* Expanded view */
-          <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+          <div className="p-4 sm:p-4 space-y-4 sm:space-y-4">
             {Object.entries(groupedChats).map(([groupName, chats]) => (
               chats.length > 0 && (
                 <div key={groupName}>
-                  <h3 className="text-xs sm:text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
-                    <Calendar size={12} className="sm:w-[14px] sm:h-[14px]" />
+                  <h3 className="text-sm sm:text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                    <Calendar size={14} className="sm:w-[14px] sm:h-[14px]" />
                     {groupName}
                   </h3>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {chats.map((chat) => (
                       <div
                         key={chat.id}
-                        className={`group relative p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        className={`group relative p-3 sm:p-3 rounded-xl cursor-pointer transition-all duration-200 
+                                 touch-manipulation active:scale-[0.98] ${
                           currentChat?.id === chat.id
                             ? `bg-gradient-to-r ${getModeColor(chat.mode)} bg-opacity-20 border border-opacity-30 ${
                                 chat.mode === 'convince-ai' ? 'border-cyan-500' : 'border-orange-500'
@@ -234,20 +259,20 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-base sm:text-lg">{getModeIcon(chat.mode)}</span>
-                              <h4 className="font-medium text-white truncate text-sm sm:text-base">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-lg sm:text-lg">{getModeIcon(chat.mode)}</span>
+                              <h4 className="font-medium text-white truncate text-base sm:text-base">
                                 {chat.name}
                               </h4>
                             </div>
                             
                             {chat.messages.length > 0 && (
-                              <p className="text-xs sm:text-sm text-slate-400 truncate">
+                              <p className="text-sm sm:text-sm text-slate-400 truncate mb-2">
                                 {chat.messages[chat.messages.length - 1].content}
                               </p>
                             )}
                             
-                            <div className="flex items-center gap-1 sm:gap-2 mt-1 sm:mt-2 text-xs text-slate-500 flex-wrap">
+                            <div className="flex items-center gap-2 sm:gap-2 text-xs text-slate-500 flex-wrap">
                               <span>{formatTime(chat.updatedAt)}</span>
                               <span>•</span>
                               <span>{chat.messages.length} msg{chat.messages.length !== 1 ? 's' : ''}</span>
@@ -261,10 +286,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                               e.stopPropagation();
                               onDeleteChat(chat.id);
                             }}
-                            className="p-1 hover:bg-red-600/20 rounded transition-all"
+                            className="p-2 hover:bg-red-600/20 rounded-lg transition-all touch-manipulation active:scale-95"
                             title="Delete chat"
                           >
-                            <Trash2 size={12} className="sm:w-[14px] sm:h-[14px] text-red-400" />
+                            <Trash2 size={14} className="sm:w-[14px] sm:h-[14px] text-red-400" />
                           </button>
                         </div>
                       </div>

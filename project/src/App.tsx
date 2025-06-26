@@ -24,22 +24,56 @@ function App() {
     updateChatSettings
   } = useChat();
 
-  // Manage body overflow based on homepage visibility
+  // Handle mobile viewport height issues
+  useEffect(() => {
+    const setMobileViewportHeight = () => {
+      // Set CSS custom property for mobile viewport height
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    // Set initial height
+    setMobileViewportHeight();
+
+    // Update height on resize (when mobile browser UI shows/hides)
+    window.addEventListener('resize', setMobileViewportHeight);
+    window.addEventListener('orientationchange', setMobileViewportHeight);
+
+    return () => {
+      window.removeEventListener('resize', setMobileViewportHeight);
+      window.removeEventListener('orientationchange', setMobileViewportHeight);
+    };
+  }, []);
+
+  // Manage body overflow and mobile positioning based on homepage visibility
   useEffect(() => {
     if (showHomepage) {
       // Allow body to scroll for homepage  
       document.body.style.overflow = 'auto';
       document.documentElement.style.overflow = 'auto';
+      // Remove mobile positioning restrictions on homepage
+      if (window.innerWidth <= 768) {
+        document.body.style.position = 'static';
+        document.documentElement.style.position = 'static';
+      }
     } else {
       // Hide body overflow when in chat mode
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
+      // Apply mobile positioning for chat mode
+      if (window.innerWidth <= 768) {
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.documentElement.style.position = 'static';
+      }
     }
 
     // Cleanup function to restore default state
     return () => {
       document.body.style.overflow = 'auto';
       document.documentElement.style.overflow = 'auto';
+      document.body.style.position = 'static';
+      document.documentElement.style.position = 'static';
     };
   }, [showHomepage]);
 
@@ -103,17 +137,17 @@ function App() {
   }
 
   return (
-    <div className="h-screen bg-slate-900 text-white flex relative overflow-hidden">
+    <div className="h-screen bg-slate-900 text-white flex relative overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Mobile sidebar backdrop */}
       {isMobileSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="sidebar-overlay lg:hidden"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`${
+      <div className={`sidebar-mobile ${
         isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 fixed lg:relative z-50 lg:z-auto transition-transform duration-300 ease-in-out h-full`}>
         <ChatSidebar
@@ -124,11 +158,12 @@ function App() {
           onDeleteChat={handleDeleteChat}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      <div className="mobile-chat-main flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {currentChat ? (
           <>
             <Header
