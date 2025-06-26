@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     elevation: 16,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 24,

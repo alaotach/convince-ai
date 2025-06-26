@@ -149,7 +149,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                 </View>
               </View>
             </View>
-          </View>        </View>
+          </View>        
+          </View>
 
         {/* Roast Level Selection */}
         <View style={styles.roastLevelSection}>
@@ -160,7 +161,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
           <RoastLevelSlider 
             value={roastLevel} 
             onChange={setRoastLevel}
-          />        </View>
+          />        
+          </View>
 
         {/* Mode Selection */}
         <View style={styles.modeSelectionSection}>
@@ -168,15 +170,16 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
           <Text style={styles.modeSectionSubtitle}>
             Select your mission in this AI vs Human battle
           </Text>
-          <ModeToggle
+          {/* <ModeToggle
             mode={selectedMode}
             onChange={setSelectedMode}
-          />
+          /> */}
         </View>
 
         {/* Enhanced Mode Selection Cards */}
         <View style={styles.modeContainer}>
-          {/* Convince AI Mode */}          <TouchableOpacity 
+          {/* Convince AI Mode */}          
+          <TouchableOpacity 
             style={[styles.modeCard, styles.convinceAiCard]}
             onPress={() => onStartChat('convince-ai', roastLevel)}
             activeOpacity={0.9}
@@ -1051,7 +1054,8 @@ const styles = StyleSheet.create({
     marginTop: 32,
     marginBottom: 20,
     gap: 12,
-  },  statusItem: {
+  },  
+  statusItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1061,11 +1065,10 @@ const styles = StyleSheet.create({
   roastLevelSection: {
     marginHorizontal: 20,
     marginBottom: 32,
-    padding: 24,
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(71, 85, 105, 0.3)',
+    // backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    // borderRadius: 20,
+    // borderWidth: 1,
+    // borderColor: 'rgba(71, 85, 105, 0.3)',
   },
   roastLevelTitle: {
     fontSize: 20,
@@ -1073,7 +1076,8 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'center',
     marginBottom: 8,
-  },  roastLevelSubtitle: {
+  },  
+  roastLevelSubtitle: {
     fontSize: 14,
     color: '#94a3b8',
     textAlign: 'center',
@@ -1082,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   // Mode Selection Section
   modeSelectionSection: {
-    marginVertical: 24,
+    marginVertical: 6,
     alignItems: 'center',
   },
   modeSectionTitle: {
