@@ -1,0 +1,8 @@
+{
+  "name": "ProvitApp",
+  "displayName": "AI Chat - Convince AI vs Prove Human",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-5804219391910467~2410710726",
+    "ios_app_id": "ca-app-pub-xxxxxxxx~xxxxxxxx"
+  }
+}
