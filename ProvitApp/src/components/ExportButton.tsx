@@ -33,7 +33,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
     setShowDropdown(true);
   };
 
-  const handleExportFormat = async (format: 'json' | 'txt' | 'pdf' | 'share') => {
+  const handleExportFormat = async (format: 'json' | 'txt' | 'share') => {
     setShowDropdown(false);
     try {
       await exportChatConversation(messages, format, mode, roastLevel);
@@ -105,17 +105,6 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
                 <View style={styles.optionContent}>
                   <Text style={styles.optionTitle}>Export JSON</Text>
                   <Text style={styles.optionDescription}>Structured data format</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.exportOption}
-                onPress={() => handleExportFormat('pdf')}
-              >
-                <Text style={styles.optionIcon}>🖨️</Text>
-                <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>Export PDF</Text>
-                  <Text style={styles.optionDescription}>Formatted document</Text>
                 </View>
               </TouchableOpacity>
             </View>

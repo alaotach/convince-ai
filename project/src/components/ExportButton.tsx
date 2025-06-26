@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, FileText, FileJson, Printer, ChevronDown } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { Message, ChatMode } from '../types/chat';
 import { exportChatConversation, generateChatSummary } from '../services/openai';
 
@@ -59,12 +60,79 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
     }
   }, [isOpen]);
 
+  const generatePdf = async () => {
+    const pdf = new jsPDF();
+    let yPosition = 20;
+    const pageHeight = pdf.internal.pageSize.height;
+    const margin = 20;
+    const lineHeight = 7;
+    const pageWidth = pdf.internal.pageSize.width - (margin * 2);
+
+    // Add title
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`AI Chat Export - ${mode === 'convince-ai' ? 'Convince AI' : 'Prove Human'}`, margin, yPosition);
+    yPosition += lineHeight * 2;
+
+    // Add metadata
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Roast Level: ${roastLevel}/10`, margin, yPosition);
+    yPosition += lineHeight;
+    pdf.text(`Exported: ${new Date().toLocaleString()}`, margin, yPosition);
+    yPosition += lineHeight;
+    pdf.text(`Total Messages: ${messages.length}`, margin, yPosition);
+    yPosition += lineHeight * 2;
+
+    // Add messages
+    for (const message of messages) {
+      // Check if we need a new page
+      if (yPosition > pageHeight - 40) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      // Add sender label
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      const sender = message.sender === 'user' ? 'You' : (mode === 'convince-ai' ? 'AI' : 'AI Detective');
+      pdf.text(`${sender}:`, margin, yPosition);
+      yPosition += lineHeight;
+
+      // Add message content
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      
+      // Split text to fit page width
+      const lines = pdf.splitTextToSize(message.content, pageWidth);
+      
+      for (const line of lines) {
+        if (yPosition > pageHeight - 20) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.text(line, margin, yPosition);
+        yPosition += lineHeight;
+      }
+      
+      yPosition += lineHeight; // Add space between messages
+    }
+
+    // Save the PDF
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    pdf.save(`chat-export-${mode}-roast-${roastLevel}-${timestamp}.pdf`);
+  };
+
   const handleExport = async (format: 'json' | 'txt' | 'pdf') => {
     if (messages.length === 0) return;
     
     setIsExporting(true);
     try {
-      exportChatConversation(messages, format, mode, roastLevel);
+      if (format === 'pdf') {
+        await generatePdf();
+      } else {
+        exportChatConversation(messages, format, mode, roastLevel);
+      }
       setIsOpen(false);
     } catch (error) {
       console.error('Export failed:', error);

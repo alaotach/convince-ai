@@ -49,7 +49,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   const EmptyIcon = emptyState.icon;
 
   return (
-    <div className="chat-container flex flex-col h-full bg-slate-900 relative max-h-full">
+    <div id="chat-container" className="chat-container flex flex-col h-full bg-slate-900 relative max-h-full">
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
