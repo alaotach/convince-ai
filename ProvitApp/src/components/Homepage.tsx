@@ -350,41 +350,6 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Advanced Features Dashboard */}
-        <View style={styles.featuresDashboard}>
-          <View style={styles.featureDashItem}>
-            <View style={[styles.featureDashIcon, { backgroundColor: '#a855f7' }]}>
-              <Text style={styles.featureDashIconText}>✨</Text>
-            </View>
-            <Text style={styles.featureDashTitle}>SMART AI CHAT</Text>
-            <Text style={styles.featureDashDesc}>Chat with AI that has different personalities and responds differently each time</Text>
-          </View>
-          
-          <View style={styles.featureDashItem}>
-            <View style={[styles.featureDashIcon, { backgroundColor: '#10b981' }]}>
-              <Text style={styles.featureDashIconText}>⚡</Text>
-            </View>
-            <Text style={styles.featureDashTitle}>DIFFICULTY LEVELS</Text>
-            <Text style={styles.featureDashDesc}>Choose how easy or challenging you want the AI to be - from friendly to super sassy</Text>
-          </View>
-          
-          <View style={styles.featureDashItem}>
-            <View style={[styles.featureDashIcon, { backgroundColor: '#3b82f6' }]}>
-              <Text style={styles.featureDashIconText}>💬</Text>
-            </View>
-            <Text style={styles.featureDashTitle}>INSTANT CHAT</Text>
-            <Text style={styles.featureDashDesc}>Start chatting right away - no waiting, no setup, just jump in and play</Text>
-          </View>
-          
-          <View style={styles.featureDashItem}>
-            <View style={[styles.featureDashIcon, { backgroundColor: '#f59e0b' }]}>
-              <Text style={styles.featureDashIconText}>⚛️</Text>
-            </View>
-            <Text style={styles.featureDashTitle}>QUANTUM LOGIC</Text>
-            <Text style={styles.featureDashDesc}>Multi-dimensional reasoning engines for philosophical and emotional analysis</Text>
-          </View>
-        </View>
-
         {/* YouTube Live Stream Challenge Section */}
         <View style={styles.challengeSection}>
           <View style={styles.challengeGlow} />
@@ -421,43 +386,7 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                 <Text style={styles.contactNote}>Contact us after your live stream victory to claim your reward!</Text>
               </View>
             </View>
-          </View>        </View>
-
-        {/* Start Battle Button */}
-        <View style={styles.startButtonContainer}>
-          <TouchableOpacity
-            style={[styles.startButton, { 
-              backgroundColor: selectedMode === 'convince-ai' ? '#06b6d4' : '#f97316' 
-            }]}
-            onPress={() => onStartChat(selectedMode, roastLevel)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.startButtonIcon}>
-              {selectedMode === 'convince-ai' ? '🤖' : '👤'}
-            </Text>
-            <Text style={styles.startButtonText}>
-              START {selectedMode === 'convince-ai' ? 'CONVINCE AI' : 'PROVE HUMAN'}
-            </Text>
-            <Text style={styles.startButtonLevel}>
-              Level {roastLevel} 🌶️
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* System Status Footer */}
-        <View style={styles.statusFooter}>
-          <View style={styles.statusItem}>
-            <View style={[styles.statusDot, { backgroundColor: '#22d3ee' }]} />
-            <Text style={[styles.statusText, { color: '#22d3ee' }]}>NEURAL NETWORKS: ONLINE</Text>
-          </View>
-          <View style={styles.statusItem}>
-            <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
-            <Text style={[styles.statusText, { color: '#10b981' }]}>CONSCIOUSNESS ENGINE: ACTIVE</Text>
-          </View>
-          <View style={styles.statusItem}>
-            <View style={[styles.statusDot, { backgroundColor: '#a855f7' }]} />
-            <Text style={[styles.statusText, { color: '#a855f7' }]}>REALITY MATRIX: STABLE</Text>
-          </View>
+          </View>        
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -850,48 +779,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#ffffff',
   },
-  // Features Dashboard
-  featuresDashboard: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginVertical: 32,
-    justifyContent: 'space-between',
-  },
-  featureDashItem: {
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(71, 85, 105, 0.5)',
-    width: '48%',
-    alignItems: 'center',
-  },
-  featureDashIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  featureDashIconText: {
-    fontSize: 20,
-    color: '#ffffff',
-  },
-  featureDashTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  featureDashDesc: {
-    fontSize: 12,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
+  
   // Challenge Section
   challengeSection: {
     marginVertical: 32,

@@ -113,7 +113,6 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                   <View style={[styles.dot, styles.dot2]} />
                   <View style={[styles.dot, styles.dot3]} />
                 </View>
-                <Text style={styles.loadingText}>AI is thinking...</Text>
               </View>
             )}
           </ScrollView>

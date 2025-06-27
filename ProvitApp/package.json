@@ -1,8 +1,8 @@
 {
-  "name": "ai-chat-app",
-  "displayName": "AI Chat App",
+  "name": "provit-app",
+  "displayName": "ProvIt",
   "version": "1.0.0",
-  "description": "AI Chat Application - Convince AI vs Prove Human battle",
+  "description": "ProvIt - AI Chat Application",
   "private": true,
   "scripts": {
     "android": "react-native run-android",

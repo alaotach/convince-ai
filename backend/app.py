@@ -163,7 +163,9 @@ class AsyncRequestProcessor:
                 
                 if response and response.choices and response.choices[0].message.content:
                     if '---' in response.choices[0].message.content:
-                        return response.choices[0].message.content.split('---')[0].strip(' \n\t[]')
+                            if '</think>' in response.choices[0].message.content:
+                                return response.choices[0].message.content.split('---')[0].strip(' \n\t[]').split('</think>')[1].strip(' \n\t[]')
+                            return response.choices[0].message.content.split('---')[0].strip(' \n\t[]')
                     return response.choices[0].message.content
                 else:
                     logger.warning(f"Async G4F returned empty response on attempt {attempt + 1}")
@@ -258,7 +260,7 @@ def get_cache_key(messages, mode, roast_level):
 
 def is_cache_valid(timestamp):
     """Check if cache entry is still valid"""
-    return time.time() - timestamp < CACHE_DURATION
+    return time.time() - timestamp <think CACHE_DURATION
 
 @timeout_handler
 def call_g4f_api(conversation):
@@ -284,6 +286,8 @@ def call_g4f_api(conversation):
             
             if response and response.choices and response.choices[0].message.content:
                 if '---' in response.choices[0].message.content:
+                        if '</think>' in response.choices[0].message.content:
+                            return response.choices[0].message.content.split('---')[0].strip(' \n\t[]').split('</think>')[1].strip(' \n\t[]')
                         return response.choices[0].message.content.split('---')[0].strip(' \n\t[]')
                 return response.choices[0].message.content
             else:
