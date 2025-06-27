@@ -64,8 +64,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
     });
   };  // Get the appropriate AI avatar
   const getAiAvatar = () => {
-    // For now, use a simple colored circle as avatar since we removed the problematic PNG files
-    return null;
+    try {
+      if (mode === 'convince-ai') {
+        // Use Roxx avatar for convince-ai mode
+        return require('../assets/roxx.png');
+      } else {
+        // Use Agent Wolf avatar for prove-human mode
+        return require('../assets/agent_wolf.png');
+      }
+    } catch (error) {
+      console.warn('Failed to load AI avatar:', error);
+      return null;
+    }
   };
 
   const aiAvatarSource = getAiAvatar();
@@ -87,9 +97,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
             <Image 
               source={aiAvatarSource}
               style={styles.aiAvatarImage}
-              onError={() => {
+              onError={(error) => {
+                console.warn('Failed to load AI avatar image:', error);
                 // Fallback handled by showing emoji instead
               }}
+              resizeMode="cover"
             />
           ) : (
             <Text style={styles.avatarText}>
