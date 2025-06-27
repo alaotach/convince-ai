@@ -117,3 +117,14 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+android.applicationVariants.all { variant ->
+    def capitalizedVariantName = variant.name.substring(0, 1).toUpperCase() + variant.name.substring(1)
+    task "generateCodegenArtifactsFromSchema${capitalizedVariantName}"(type: Exec) {
+        dependsOn "pre${capitalizedVariantName}Build"
+        commandLine "node", "../../node_modules/react-native/scripts/generate-codegen-artifacts.js",
+                "--path", "../..",
+                "--platform", "android",
+                "--output-path", "$buildDir/generated/source/codegen"
+    }
+}

@@ -32,19 +32,55 @@ export class ChatStorageService {
       if (!savedData) return [];
 
       const parsed = JSON.parse(savedData);
+
+      if (!Array.isArray(parsed)) {
+        console.warn('Stored chat history is not an array, resetting.');
+        await AsyncStorage.removeItem(STORAGE_KEY);
+        return [];
+      }
       
-      // Convert string dates back to Date objects
-      return parsed.map((chat: any) => ({
-        ...chat,
-        createdAt: new Date(chat.createdAt),
-        updatedAt: new Date(chat.updatedAt),
-        messages: chat.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
-      }));
+      // Convert string dates back to Date objects with validation
+      const validSessions = parsed.map((chat: any) => {
+        try {
+          if (!chat || typeof chat !== 'object' || !chat.id) {
+            return null;
+          }
+          const createdAt = chat.createdAt ? new Date(chat.createdAt) : new Date();
+          const updatedAt = chat.updatedAt ? new Date(chat.updatedAt) : new Date();
+
+          if (isNaN(createdAt.getTime()) || isNaN(updatedAt.getTime())) {
+            console.warn(`Invalid date found for chat ${chat.id}, using current time.`);
+          }
+
+          const messages = Array.isArray(chat.messages) ? chat.messages.map((msg: any) => {
+            if (!msg || typeof msg !== 'object' || !msg.id) return null;
+            const timestamp = msg.timestamp ? new Date(msg.timestamp) : new Date();
+            if (isNaN(timestamp.getTime())) return null;
+            return { ...msg, timestamp };
+          }).filter(Boolean) : [];
+
+          return {
+            ...chat,
+            createdAt: !isNaN(createdAt.getTime()) ? createdAt : new Date(),
+            updatedAt: !isNaN(updatedAt.getTime()) ? updatedAt : new Date(),
+            messages,
+          };
+        } catch (e) {
+          console.error(`Failed to parse a chat session, skipping:`, e);
+          return null;
+        }
+      }).filter(Boolean) as ChatSession[];
+
+      return validSessions;
+
     } catch (error) {
-      console.error('Failed to load chat history from AsyncStorage:', error);
+      console.error('Failed to load or parse chat history from AsyncStorage:', error);
+      // If parsing fails, it might be due to corrupt data. Clear it.
+      try {
+        await AsyncStorage.removeItem(STORAGE_KEY);
+      } catch (removeError) {
+        console.error('Failed to remove corrupt chat history:', removeError);
+      }
       return [];
     }
   }

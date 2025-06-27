@@ -253,7 +253,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                   </View>
                 </View>
                 
-                {/* Action button */}                <TouchableOpacity 
+                {/* Action button */}
+                <TouchableOpacity 
                   style={[styles.actionButton, { backgroundColor: '#0891b2' }]}
                   onPress={() => onStartChat('convince-ai', roastLevel)}
                 >
@@ -264,7 +265,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
             </View>
           </TouchableOpacity>
 
-          {/* Prove Human Mode */}          <TouchableOpacity 
+          {/* Prove Human Mode */}
+          <TouchableOpacity 
             style={[styles.modeCard, styles.proveHumanCard]}
             onPress={() => onStartChat('prove-human', roastLevel)}
             activeOpacity={0.9}
@@ -338,7 +340,8 @@ export const Homepage: React.FC<HomepageProps> = ({ onStartChat }) => {
                   </View>
                 </View>
                 
-                {/* Action button */}                <TouchableOpacity 
+                {/* Action button */}
+                <TouchableOpacity 
                   style={[styles.actionButton, { backgroundColor: '#dc2626' }]}
                   onPress={() => onStartChat('prove-human', roastLevel)}
                 >

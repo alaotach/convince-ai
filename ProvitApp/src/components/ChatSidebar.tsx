@@ -205,7 +205,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   currentChat?.id === chat.id && styles.chatItemActive
                 ]}
                 onPress={() => handleSelectChat(chat)}
-              >                <View style={styles.chatItemHeader}>
+              >
+                <View style={styles.chatItemHeader}>
                   <Text style={styles.chatItemIcon}>
                     {getModeIcon(chat.mode)}
                   </Text>

@@ -197,12 +197,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </View>
         </Animated.View>
         
-        {/* Loading indicator */}
-        {isLoading && (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>🧠 Neural processing...</Text>
-          </View>
-        )}
       </View>
     </KeyboardAvoidingView>
   );

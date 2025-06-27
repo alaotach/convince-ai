@@ -70,7 +70,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, mode }) => {
         return require('../assets/roxx.png');
       } else {
         // Use Agent Wolf avatar for prove-human mode
-        return require('../assets/agent_wolf.png');
+        return require('../assets/agent_wolf.jpg');
       }
     } catch (error) {
       console.warn('Failed to load AI avatar:', error);
