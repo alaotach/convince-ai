@@ -35,7 +35,8 @@ logger = logging.getLogger(__name__)
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["20/';ll;[0 per day", "50 per hour", "10 per minute"]
+    default_limits=["200 per day", "50 per hour", "10 per minute"],
+    storage_uri="memory://",
 )
 limiter.init_app(app)
 
@@ -258,6 +259,10 @@ def start_async_thread():
         async_thread = Thread(target=run_async_loop, daemon=True)
         async_thread.start()
         logger.info("Async thread started")
+
+
+# Ensure async processor is started when running under Gunicorn using app:app.
+start_async_thread()
 
 
 def timeout_handler(func):
@@ -536,12 +541,16 @@ def process_chat_request_hybrid(messages, mode, roast_level):
 
 
 @app.route('/api/chat', methods=['POST'])
-@limiter.limit("20 per minute")
+@limiter.limit("10 per minute")
 def chat():
-    start_time = time.time()
+    request_start = time.time()
+    request_size = len(request.get_data(cache=True) or b"")
+    logger.info(
+        f"[{time.strftime('%H:%M:%S')}] REQUEST RECEIVED from {request.remote_addr} - {request_size} bytes"
+    )
 
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
 
         messages = data.get('messages', [])
         mode = data.get('mode', 'convince-ai')
@@ -554,17 +563,33 @@ def chat():
         if len(messages) > 20:
             messages = messages[-20:]
 
-        logger.info(f"Processing chat request - Mode: {mode}, Roast Level: {roast_level}, Async: {use_async}")
+        after_parse = time.time()
+        logger.info(
+            f"[{time.strftime('%H:%M:%S')}] PARSED in {(after_parse - request_start) * 1000:.0f}ms "
+            f"- Mode: {mode}, Roast Level: {roast_level}, Async: {use_async}"
+        )
 
         if use_async and async_thread and async_thread.is_alive():
+            logger.info(f"[{time.strftime('%H:%M:%S')}] Using HYBRID async path")
             future = executor.submit(process_chat_request_hybrid, messages, mode, roast_level)
             processing_method = "hybrid"
         else:
+            logger.info(f"[{time.strftime('%H:%M:%S')}] Using SYNC path (async thread unavailable)")
             future = executor.submit(process_chat_request, messages, mode, roast_level)
             processing_method = "sync"
 
+        after_submit = time.time()
+        logger.info(
+            f"[{time.strftime('%H:%M:%S')}] SUBMITTED to executor in {(after_submit - after_parse) * 1000:.0f}ms"
+        )
+
         try:
             ai_message = future.result(timeout=OPENROUTER_TIMEOUT_SYNC)
+            after_result = time.time()
+            logger.info(
+                f"[{time.strftime('%H:%M:%S')}] GOT RESULT in {(after_result - after_submit) * 1000:.0f}ms "
+                f"| total so far {(after_result - request_start) * 1000:.0f}ms"
+            )
 
             if not ai_message or not isinstance(ai_message, str):
                 return jsonify({
@@ -590,8 +615,10 @@ def chat():
                 'processing_method': processing_method
             }), 500
 
-        processing_time = time.time() - start_time
-        logger.info(f"Request processed in {processing_time:.2f}s via {processing_method}")
+        processing_time = time.time() - request_start
+        logger.info(
+            f"[{time.strftime('%H:%M:%S')}] REQUEST FULLY PROCESSED in {processing_time:.2f}s via {processing_method}"
+        )
 
         return jsonify({
             'message': ai_message,
@@ -602,7 +629,7 @@ def chat():
         })
 
     except Exception as e:
-        processing_time = time.time() - start_time
+        processing_time = time.time() - request_start
         logger.error(f"Chat endpoint error after {processing_time:.2f}s: {str(e)}")
         return jsonify({
             'error': 'Internal server error. Please try again.',
