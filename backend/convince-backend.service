@@ -20,8 +20,8 @@ SyslogIdentifier=convince-backend
 # Security settings
 NoNewPrivileges=true
 DynamicUser=false
-ProtectSystem=strict
-ProtectHome=read-only
+ProtectSystem=full
+ProtectHome=false
 ReadWritePaths=/data/home/convince-ai/backend
 PrivateTmp=true
 
