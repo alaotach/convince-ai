@@ -189,20 +189,12 @@ class AsyncRequestProcessor:
                 logger.info(f"Making blocking OpenRouter API call (async path, attempt {attempt + 1})")
                 start_time = time.time()
 
-                response = client.chat.send(
-                    model=OPENROUTER_MODEL,
-                    messages=conversation,
-                )
+                content = _call_proxy(conversation)
 
                 processing_time = time.time() - start_time
                 logger.info(f"OpenRouter API call completed in {processing_time:.2f} seconds (attempt {attempt + 1})")
 
-                if response and response.choices and response.choices[0].message.content:
-                    content = response.choices[0].message.content
-                    if '---' in content:
-                        if '</think>' in content:
-                            return content.split('---')[0].strip(' \n\t[]').split('</think>')[1].strip(' \n\t[]')
-                        return content.split('---')[0].strip(' \n\t[]')
+                if content:
                     return content
                 else:
                     logger.warning(f"OpenRouter returned empty response on attempt {attempt + 1}")
@@ -316,20 +308,12 @@ def call_openrouter_api(conversation):
             logger.info(f"Making OpenRouter API call (attempt {attempt + 1})...")
             start_time = time.time()
 
-            response = client.chat.send(
-                model=OPENROUTER_MODEL,
-                messages=conversation,
-            )
+            content = _call_proxy(conversation)
 
             processing_time = time.time() - start_time
             logger.info(f"OpenRouter API call completed in {processing_time:.2f} seconds (attempt {attempt + 1})")
 
-            if response and response.choices and response.choices[0].message.content:
-                content = response.choices[0].message.content
-                if '---' in content:
-                    if '</think>' in content:
-                        return content.split('---')[0].strip(' \n\t[]').split('</think>')[1].strip(' \n\t[]')
-                    return content.split('---')[0].strip(' \n\t[]')
+            if content:
                 return content
             else:
                 logger.warning(f"OpenRouter returned empty response on attempt {attempt + 1}")
