@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import requests as http_requests
+from openrouter import OpenRouter
 import os
 import asyncio
 import threading
@@ -47,39 +47,30 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-3-flash-preview"
 if not OPENROUTER_API_KEY:
     logger.warning("OPENROUTER_API_KEY not found in environment variables")
 
-# Direct HTTP headers for the hackclub OpenAI-compatible proxy
-OPENROUTER_HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-}
+client = OpenRouter(
+    api_key=OPENROUTER_API_KEY,
+    server_url=OPENROUTER_SERVER_URL,
+)
 
-def _call_proxy(messages: list) -> str:
-    """
-    Single low-level function that POSTs to the hackclub proxy.
-    Returns the assistant message string, or raises on failure.
-    """
-    payload = {
-        "model": OPENROUTER_MODEL,
-        "messages": messages,
-    }
-    resp = http_requests.post(
-        f"{OPENROUTER_SERVER_URL}/chat/completions",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        },
-        json=payload,
-        timeout=OPENROUTER_TIMEOUT_SYNC,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    content = data["choices"][0]["message"]["content"]
+def _extract_content(content: str) -> str:
     # Strip chain-of-thought / separator artefacts
     if '---' in content:
         content = content.split('---')[0]
     if '</think>' in content:
         content = content.split('</think>', 1)[1]
     return content.strip(' \n\t[]')
+
+def _call_proxy(messages: list) -> str:
+    """Single low-level function that sends a chat request via OpenRouter SDK."""
+    response = client.chat.send(
+        model=OPENROUTER_MODEL,
+        messages=messages,
+    )
+
+    if response and response.choices and response.choices[0].message.content:
+        return _extract_content(response.choices[0].message.content)
+
+    raise ValueError("OpenRouter returned an empty response")
 
 # Thread pool for handling concurrent requests
 executor = ThreadPoolExecutor(max_workers=10)
