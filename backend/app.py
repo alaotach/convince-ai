@@ -2,12 +2,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import requests as http_requests
 import os
 import asyncio
 import threading
 import time
 import logging
+import json
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import queue
@@ -15,6 +15,7 @@ from threading import Thread, Event
 from collections import deque
 import weakref
 from dotenv import load_dotenv
+from urllib.request import Request, urlopen
 
 # Load environment variables
 load_dotenv()
@@ -57,19 +58,20 @@ def _extract_content(content: str) -> str:
 def _call_proxy(messages: list) -> str:
     """Send a chat request via plain HTTP to the HackClub proxy."""
     url = f"{API_BASE_URL}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-    }
     payload = {
         "model": API_MODEL,
         "messages": messages,
     }
+    body = json.dumps(payload).encode("utf-8")
 
-    response = http_requests.post(url, headers=headers, json=payload, timeout=60)
-    response.raise_for_status()
+    req = Request(url=url, data=body, method="POST", headers={
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+    })
 
-    data = response.json()
+    with urlopen(req, timeout=60) as response:
+        data = json.loads(response.read().decode("utf-8"))
+
     content = data["choices"][0]["message"]["content"]
     if not content:
         raise ValueError("API returned an empty response")
@@ -177,7 +179,7 @@ class AsyncRequestProcessor:
                     continue
 
             except Exception as e:
-                logger.error(f"Blocking API call error on attempt {attempt + 1}: {str(e)}")
+                logger.error(f"Blocking API call error on attempt {attempt + 1}: {str(e)}", exc_info=True)
                 if attempt == OPENROUTER_RETRY_ATTEMPTS - 1:
                     raise
                 continue
@@ -280,7 +282,7 @@ def call_api(conversation):
                 continue
 
         except Exception as e:
-            logger.error(f"API error on attempt {attempt + 1}: {str(e)}")
+            logger.error(f"API error on attempt {attempt + 1}: {str(e)}", exc_info=True)
             if attempt == OPENROUTER_RETRY_ATTEMPTS - 1:
                 return "yo my brain just glitched for a sec... what were we talking about again? 💀"
             continue
