@@ -569,22 +569,24 @@ def chat():
             f"- Mode: {mode}, Roast Level: {roast_level}, Async: {use_async}"
         )
 
-        if use_async and async_thread and async_thread.is_alive():
-            logger.info(f"[{time.strftime('%H:%M:%S')}] Using HYBRID async path")
-            future = executor.submit(process_chat_request_hybrid, messages, mode, roast_level)
-            processing_method = "hybrid"
-        else:
-            logger.info(f"[{time.strftime('%H:%M:%S')}] Using SYNC path (async thread unavailable)")
-            future = executor.submit(process_chat_request, messages, mode, roast_level)
-            processing_method = "sync"
-
-        after_submit = time.time()
-        logger.info(
-            f"[{time.strftime('%H:%M:%S')}] SUBMITTED to executor in {(after_submit - after_parse) * 1000:.0f}ms"
-        )
-
         try:
-            ai_message = future.result(timeout=OPENROUTER_TIMEOUT_SYNC)
+            if use_async and async_thread and async_thread.is_alive():
+                logger.info(f"[{time.strftime('%H:%M:%S')}] Using HYBRID async path")
+                processing_method = "hybrid"
+                after_submit = time.time()
+                logger.info(
+                    f"[{time.strftime('%H:%M:%S')}] DISPATCHED inline in {(after_submit - after_parse) * 1000:.0f}ms"
+                )
+                ai_message = process_chat_request_hybrid(messages, mode, roast_level)
+            else:
+                logger.info(f"[{time.strftime('%H:%M:%S')}] Using SYNC path (async thread unavailable)")
+                processing_method = "sync"
+                after_submit = time.time()
+                logger.info(
+                    f"[{time.strftime('%H:%M:%S')}] DISPATCHED inline in {(after_submit - after_parse) * 1000:.0f}ms"
+                )
+                ai_message = process_chat_request(messages, mode, roast_level)
+
             after_result = time.time()
             logger.info(
                 f"[{time.strftime('%H:%M:%S')}] GOT RESULT in {(after_result - after_submit) * 1000:.0f}ms "
@@ -598,15 +600,6 @@ def chat():
                     'processing_method': processing_method
                 }), 500
 
-        except TimeoutError as timeout_error:
-            logger.error(f"Request processing timeout ({processing_method}): {str(timeout_error)}")
-            return jsonify({
-                'error': f'Request timed out after {OPENROUTER_TIMEOUT_SYNC}s. Please try again in a moment.',
-                'success': False,
-                'processing_method': processing_method,
-                'timeout_duration': OPENROUTER_TIMEOUT_SYNC,
-                'retry_suggestion': 'Please wait a moment and try again'
-            }), 504
         except Exception as e:
             logger.error(f"Request processing failed ({processing_method}): {str(e)}", exc_info=True)
             return jsonify({
