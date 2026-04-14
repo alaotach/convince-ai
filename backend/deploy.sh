@@ -96,7 +96,7 @@ install_python_deps() {
         sudo -u $DEPLOY_USER $VENV_DIR/bin/pip install -r $BACKEND_DIR/requirements.txt
     else
         print_warning "requirements.txt not found, installing essential packages..."
-        sudo -u $DEPLOY_USER $VENV_DIR/bin/pip install flask flask-cors flask-limiter g4f gunicorn[gevent] python-dotenv aiohttp
+        sudo -u $DEPLOY_USER $VENV_DIR/bin/pip install flask flask-cors flask-limiter openrouter gunicorn[gevent] python-dotenv aiohttp
     fi
     
     print_success "Python dependencies installed"

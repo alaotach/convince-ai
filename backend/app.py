@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from g4f import Client
+from openrouter import OpenRouter
 import os
 import asyncio
 import threading
@@ -40,8 +40,18 @@ limiter = Limiter(
 )
 limiter.init_app(app)
 
-# Configure OpenAI client
-openai = Client()
+# Configure OpenRouter client
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_SERVER_URL = os.getenv("OPENROUTER_SERVER_URL", "https://ai.hackclub.com/proxy/v1")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-3-flash-preview")
+
+if not OPENROUTER_API_KEY:
+    logger.warning("OPENROUTER_API_KEY not found in environment variables")
+
+openai = OpenRouter(
+    api_key=OPENROUTER_API_KEY,
+    server_url=OPENROUTER_SERVER_URL,
+)
 
 # Thread pool for handling concurrent requests
 executor = ThreadPoolExecutor(max_workers=10)
@@ -150,12 +160,9 @@ class AsyncRequestProcessor:
                 logger.info(f"Making blocking g4f API call (async path, attempt {attempt + 1})")
                 start_time = time.time()
                 
-                client = Client()
-                response = client.chat.completions.create(
-                    model="deepseek-r1-distill-qwen-32b",
+                response = openai.chat.send(
+                    model=OPENROUTER_MODEL,
                     messages=conversation,
-                    max_tokens=100,
-                    temperature=0.9
                 )
                 
                 processing_time = time.time() - start_time
@@ -274,11 +281,9 @@ def call_g4f_api(conversation):
             logger.info(f"Making g4f API call (attempt {attempt + 1}, this may take a while due to g4f being slow)...")
             start_time = time.time()
             
-            response = openai.chat.completions.create(
-                model="deepseek-r1-distill-qwen-32b",
+            response = openai.chat.send(
+                model=OPENROUTER_MODEL,
                 messages=conversation,
-                max_tokens=100,
-                temperature=0.9
             )
             
             processing_time = time.time() - start_time
@@ -769,8 +774,8 @@ def create_app():
 
 if __name__ == '__main__':
     # Development server
-    if not os.getenv('OPENAI_API_KEY'):
-        logger.warning("OPENAI_API_KEY not found in environment variables")
+    if not os.getenv('OPENROUTER_API_KEY'):
+        logger.warning("OPENROUTER_API_KEY not found in environment variables")
     
     logger.info("Starting hybrid async+threading development server...")
     logger.info("Features:")
