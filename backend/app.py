@@ -2,16 +2,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from openrouter import OpenRouter
+import requests as http_requests
 import os
 import asyncio
 import threading
 import time
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import queue
-import aiohttp
 from threading import Thread, Event
 from collections import deque
 import weakref
@@ -48,10 +47,39 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-3-flash-preview"
 if not OPENROUTER_API_KEY:
     logger.warning("OPENROUTER_API_KEY not found in environment variables")
 
-client = OpenRouter(
-    api_key=OPENROUTER_API_KEY,
-    server_url=OPENROUTER_SERVER_URL,
-)
+# Direct HTTP headers for the hackclub OpenAI-compatible proxy
+OPENROUTER_HEADERS = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+}
+
+def _call_proxy(messages: list) -> str:
+    """
+    Single low-level function that POSTs to the hackclub proxy.
+    Returns the assistant message string, or raises on failure.
+    """
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "messages": messages,
+    }
+    resp = http_requests.post(
+        f"{OPENROUTER_SERVER_URL}/chat/completions",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        },
+        json=payload,
+        timeout=OPENROUTER_TIMEOUT_SYNC,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    content = data["choices"][0]["message"]["content"]
+    # Strip chain-of-thought / separator artefacts
+    if '---' in content:
+        content = content.split('---')[0]
+    if '</think>' in content:
+        content = content.split('</think>', 1)[1]
+    return content.strip(' \n\t[]')
 
 # Thread pool for handling concurrent requests
 executor = ThreadPoolExecutor(max_workers=10)
