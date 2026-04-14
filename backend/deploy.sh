@@ -7,9 +7,9 @@ echo "🚀 Convince AI Backend Deployment Script"
 echo "========================================"
 
 # Configuration
-DEPLOY_USER="www-data"
-DEPLOY_GROUP="www-data"
-APP_DIR="/opt/convince"
+DEPLOY_USER="aloo"
+DEPLOY_GROUP="aloo"
+APP_DIR="/data/home/convince-ai"
 BACKEND_DIR="$APP_DIR/backend"
 VENV_DIR="$APP_DIR/venv"
 SERVICE_NAME="convince-backend"
