@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from openrouter import OpenRouter
+import requests as http_requests
 import os
 import asyncio
 import threading
@@ -20,94 +20,93 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins="*")  # Enable CORS for all routes
+CORS(app, origins="*")
 
-# Configuration for OpenRouter API handling
-OPENROUTER_TIMEOUT_ASYNC = 60  # Timeout for async requests (1 minute)
-OPENROUTER_TIMEOUT_SYNC = 75   # Timeout for sync requests (75 seconds)
-OPENROUTER_RETRY_ATTEMPTS = 2  # Number of retry attempts for failed calls
-OPENROUTER_RETRY_DELAY = 2     # Delay between retry attempts (seconds)
+# Configuration
+OPENROUTER_TIMEOUT_ASYNC = 60
+OPENROUTER_TIMEOUT_SYNC = 75
+OPENROUTER_RETRY_ATTEMPTS = 2
+OPENROUTER_RETRY_DELAY = 2
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configure rate limiting
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour", "10 per minute"]
 )
 limiter.init_app(app)
 
-# Configure OpenRouter client
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_SERVER_URL = os.getenv("OPENROUTER_SERVER_URL", "https://ai.hackclub.com/proxy/v1")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-3-flash-preview")
+# API config
+API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+API_BASE_URL = os.getenv("OPENROUTER_SERVER_URL", "https://ai.hackclub.com/proxy/v1")
+API_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-3-flash-preview")
 
-if not OPENROUTER_API_KEY:
+if not API_KEY:
     logger.warning("OPENROUTER_API_KEY not found in environment variables")
 
-client = OpenRouter(
-    api_key=OPENROUTER_API_KEY,
-    server_url=OPENROUTER_SERVER_URL,
-)
 
 def _extract_content(content: str) -> str:
-    # Strip chain-of-thought / separator artefacts
     if '---' in content:
         content = content.split('---')[0]
     if '</think>' in content:
         content = content.split('</think>', 1)[1]
     return content.strip(' \n\t[]')
 
+
 def _call_proxy(messages: list) -> str:
-    """Single low-level function that sends a chat request via OpenRouter SDK."""
-    response = client.chat.send(
-        model=OPENROUTER_MODEL,
-        messages=messages,
-    )
+    """Send a chat request via plain HTTP to the HackClub proxy."""
+    url = f"{API_BASE_URL}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": API_MODEL,
+        "messages": messages,
+    }
 
-    if response and response.choices and response.choices[0].message.content:
-        return _extract_content(response.choices[0].message.content)
+    response = http_requests.post(url, headers=headers, json=payload, timeout=60)
+    response.raise_for_status()
 
-    raise ValueError("OpenRouter returned an empty response")
+    data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    if not content:
+        raise ValueError("API returned an empty response")
+    return _extract_content(content)
 
-# Thread pool for handling concurrent requests
+
+# Thread pool
 executor = ThreadPoolExecutor(max_workers=10)
 
-# Async event loop and threading components
+# Async components
 async_loop = None
 async_thread = None
 shutdown_event = Event()
 
-# Cache for storing recent responses (simple in-memory cache)
+# Cache
 response_cache = {}
 CACHE_DURATION = 300  # 5 minutes
 
-# Request queue for async processing
 request_queue = deque(maxlen=1000)
 active_requests = weakref.WeakSet()
 
-class AsyncRequestProcessor:
-    """Handles async processing of requests"""
 
+class AsyncRequestProcessor:
     def __init__(self):
         self.loop = None
         self.running = False
         self.semaphore = None
 
     async def initialize(self):
-        """Initialize async components"""
         self.loop = asyncio.get_event_loop()
-        self.semaphore = asyncio.Semaphore(20)  # Limit concurrent async operations
+        self.semaphore = asyncio.Semaphore(20)
         self.running = True
         logger.info("Async request processor initialized")
 
     async def process_request_async(self, messages, mode, roast_level, future_result):
-        """Process a single request asynchronously"""
         try:
             async with self.semaphore:
-                # Check cache first
                 cache_key = get_cache_key(messages, mode, roast_level)
                 if cache_key in response_cache:
                     cached_response, timestamp = response_cache[cache_key]
@@ -116,27 +115,17 @@ class AsyncRequestProcessor:
                         future_result.put(('success', cached_response))
                         return
 
-                # Prepare conversation for API
                 system_prompt = get_system_prompt(mode, roast_level)
-                conversation = [
-                    {"role": "system", "content": system_prompt}
-                ] + messages
+                conversation = [{"role": "system", "content": system_prompt}] + messages
 
-                # Make async API call
-                ai_message = await self.call_openrouter_api_async(conversation)
+                ai_message = await self.call_api_async(conversation)
 
-                # Validate response
                 if not ai_message or not isinstance(ai_message, str):
-                    logger.error(f"Invalid async API response: {type(ai_message)} - {ai_message}")
                     future_result.put(('error', 'Invalid response from AI API'))
                     return
 
-                # Cache the response
                 response_cache[cache_key] = (ai_message, time.time())
-
-                # Clean old cache entries
                 await self.cleanup_cache()
-
                 future_result.put(('success', ai_message))
 
         except asyncio.TimeoutError:
@@ -146,86 +135,73 @@ class AsyncRequestProcessor:
             logger.error(f"Async request processing error: {str(e)}", exc_info=True)
             future_result.put(('error', f"Async processing error: {str(e)}"))
         finally:
-            # Ensure we always put something in the queue if it's empty
             try:
                 if future_result.empty():
-                    logger.error("No result was put in queue, adding fallback error")
                     future_result.put(('error', 'Async processing completed without result'))
             except:
                 pass
 
-    async def call_openrouter_api_async(self, conversation):
-        """Make async API call to OpenRouter"""
+    async def call_api_async(self, conversation):
         try:
-            # Run the blocking OpenRouter call in a thread pool
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 executor,
-                self._blocking_openrouter_call,
+                self._blocking_api_call,
                 conversation
             )
             return response
         except Exception as e:
-            logger.error(f"Async OpenRouter API error: {str(e)}")
+            logger.error(f"Async API error: {str(e)}")
             return "yo my brain just async-glitched... give me a sec to reboot 🔄💀"
 
-    def _blocking_openrouter_call(self, conversation):
-        """Blocking OpenRouter call to be run in executor with retry logic"""
+    def _blocking_api_call(self, conversation):
         for attempt in range(OPENROUTER_RETRY_ATTEMPTS):
             try:
                 if attempt > 0:
-                    logger.info(f"Retrying OpenRouter API call (attempt {attempt + 1}/{OPENROUTER_RETRY_ATTEMPTS})")
+                    logger.info(f"Retrying API call (attempt {attempt + 1}/{OPENROUTER_RETRY_ATTEMPTS})")
                     time.sleep(OPENROUTER_RETRY_DELAY)
 
-                logger.info(f"Making blocking OpenRouter API call (async path, attempt {attempt + 1})")
+                logger.info(f"Making blocking API call (async path, attempt {attempt + 1})")
                 start_time = time.time()
 
                 content = _call_proxy(conversation)
 
                 processing_time = time.time() - start_time
-                logger.info(f"OpenRouter API call completed in {processing_time:.2f} seconds (attempt {attempt + 1})")
+                logger.info(f"API call completed in {processing_time:.2f}s (attempt {attempt + 1})")
 
                 if content:
                     return content
                 else:
-                    logger.warning(f"OpenRouter returned empty response on attempt {attempt + 1}")
                     if attempt == OPENROUTER_RETRY_ATTEMPTS - 1:
                         return "yo my async brain just went blank... try asking me something else? 🤔💫"
                     continue
 
             except Exception as e:
-                logger.error(f"Blocking OpenRouter call error on attempt {attempt + 1}: {str(e)}")
+                logger.error(f"Blocking API call error on attempt {attempt + 1}: {str(e)}")
                 if attempt == OPENROUTER_RETRY_ATTEMPTS - 1:
-                    raise  # Re-raise on final attempt
+                    raise
                 continue
 
         raise Exception("All retry attempts failed")
 
     async def cleanup_cache(self):
-        """Async cache cleanup"""
         if len(response_cache) > 100:
             old_keys = [k for k, (_, ts) in response_cache.items() if not is_cache_valid(ts)]
             for key in old_keys[:50]:
                 response_cache.pop(key, None)
 
     async def run_processor(self):
-        """Main async processor loop"""
         await self.initialize()
 
         while self.running and not shutdown_event.is_set():
             try:
-                # Process any queued requests
                 if request_queue:
                     request_data = request_queue.popleft()
                     messages, mode, roast_level, future_result = request_data
-
-                    # Process asynchronously
                     asyncio.create_task(
                         self.process_request_async(messages, mode, roast_level, future_result)
                     )
-
-                await asyncio.sleep(0.01)  # Small delay to prevent busy waiting
-
+                await asyncio.sleep(0.01)
             except Exception as e:
                 logger.error(f"Async processor error: {str(e)}")
                 await asyncio.sleep(0.1)
@@ -233,20 +209,16 @@ class AsyncRequestProcessor:
         logger.info("Async processor stopped")
 
     def stop(self):
-        """Stop the async processor"""
         self.running = False
 
 
-# Global async processor
 async_processor = AsyncRequestProcessor()
 
 
 def run_async_loop():
-    """Run the async event loop in a separate thread"""
     global async_loop
     async_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(async_loop)
-
     try:
         async_loop.run_until_complete(async_processor.run_processor())
     except Exception as e:
@@ -256,7 +228,6 @@ def run_async_loop():
 
 
 def start_async_thread():
-    """Start the async processing thread"""
     global async_thread
     if async_thread is None or not async_thread.is_alive():
         async_thread = Thread(target=run_async_loop, daemon=True)
@@ -265,7 +236,6 @@ def start_async_thread():
 
 
 def timeout_handler(func):
-    """Decorator to add timeout functionality to API calls"""
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -277,43 +247,40 @@ def timeout_handler(func):
 
 
 def get_cache_key(messages, mode, roast_level):
-    """Generate a cache key for the request"""
-    message_hash = hash(str(messages[-3:]))  # Use last 3 messages for context
+    message_hash = hash(str(messages[-3:]))
     return f"{mode}_{roast_level}_{message_hash}"
 
 
 def is_cache_valid(timestamp):
-    """Check if cache entry is still valid"""
     return time.time() - timestamp < CACHE_DURATION
 
 
 @timeout_handler
-def call_openrouter_api(conversation):
-    """Make API call to OpenRouter with error handling and retries"""
+def call_api(conversation):
+    """Make API call with error handling and retries."""
     for attempt in range(OPENROUTER_RETRY_ATTEMPTS):
         try:
             if attempt > 0:
-                logger.info(f"Retrying OpenRouter API call (attempt {attempt + 1}/{OPENROUTER_RETRY_ATTEMPTS})")
+                logger.info(f"Retrying API call (attempt {attempt + 1}/{OPENROUTER_RETRY_ATTEMPTS})")
                 time.sleep(OPENROUTER_RETRY_DELAY)
 
-            logger.info(f"Making OpenRouter API call (attempt {attempt + 1})...")
+            logger.info(f"Making API call (attempt {attempt + 1})...")
             start_time = time.time()
 
             content = _call_proxy(conversation)
 
             processing_time = time.time() - start_time
-            logger.info(f"OpenRouter API call completed in {processing_time:.2f} seconds (attempt {attempt + 1})")
+            logger.info(f"API call completed in {processing_time:.2f}s (attempt {attempt + 1})")
 
             if content:
                 return content
             else:
-                logger.warning(f"OpenRouter returned empty response on attempt {attempt + 1}")
                 if attempt == OPENROUTER_RETRY_ATTEMPTS - 1:
                     return "yo my brain just went blank... try asking me something else? 🤔"
                 continue
 
         except Exception as e:
-            logger.error(f"OpenRouter API error on attempt {attempt + 1}: {str(e)}")
+            logger.error(f"API error on attempt {attempt + 1}: {str(e)}")
             if attempt == OPENROUTER_RETRY_ATTEMPTS - 1:
                 return "yo my brain just glitched for a sec... what were we talking about again? 💀"
             continue
@@ -322,7 +289,6 @@ def call_openrouter_api(conversation):
 
 
 def get_system_prompt(mode, roast_level):
-    """Generate system prompt based on mode and roast level"""
     if roast_level <= 3:
         roast_intensity = 'light'
     elif roast_level <= 6:
@@ -481,9 +447,7 @@ If the user says:
 
 
 def process_chat_request(messages, mode, roast_level):
-    """Process chat request synchronously"""
     try:
-        # Check cache first
         cache_key = get_cache_key(messages, mode, roast_level)
         if cache_key in response_cache:
             cached_response, timestamp = response_cache[cache_key]
@@ -491,19 +455,13 @@ def process_chat_request(messages, mode, roast_level):
                 logger.info("Returning cached response (sync)")
                 return cached_response
 
-        # Prepare conversation for API
         system_prompt = get_system_prompt(mode, roast_level)
-        conversation = [
-            {"role": "system", "content": system_prompt}
-        ] + messages
+        conversation = [{"role": "system", "content": system_prompt}] + messages
 
-        # Make API call
-        ai_message = call_openrouter_api(conversation)
+        ai_message = call_api(conversation)
 
-        # Cache the response
         response_cache[cache_key] = (ai_message, time.time())
 
-        # Clean old cache entries
         if len(response_cache) > 100:
             old_keys = [k for k, (_, ts) in response_cache.items() if not is_cache_valid(ts)]
             for key in old_keys[:50]:
@@ -517,15 +475,12 @@ def process_chat_request(messages, mode, roast_level):
 
 
 def process_chat_request_hybrid(messages, mode, roast_level):
-    """Hybrid processing: tries async first, falls back to sync"""
     try:
-        # Try async processing first
         if async_thread and async_thread.is_alive() and async_processor.running:
             result_queue = queue.Queue()
             request_data = (messages, mode, roast_level, result_queue)
             request_queue.append(request_data)
 
-            # Wait for async result with timeout
             try:
                 result = result_queue.get(timeout=OPENROUTER_TIMEOUT_ASYNC)
 
@@ -536,7 +491,6 @@ def process_chat_request_hybrid(messages, mode, roast_level):
                         return message
                     else:
                         logger.error(f"Async processing returned error: {message}")
-                        # Fall through to sync processing
                 else:
                     logger.info("Request processed via async path (legacy format)")
                     return result
@@ -548,7 +502,6 @@ def process_chat_request_hybrid(messages, mode, roast_level):
         else:
             logger.info("Async processing unavailable, using sync")
 
-        # Fallback to synchronous processing
         logger.info("Using synchronous processing")
         return process_chat_request(messages, mode, roast_level)
 
@@ -589,7 +542,6 @@ def chat():
             ai_message = future.result(timeout=OPENROUTER_TIMEOUT_SYNC)
 
             if not ai_message or not isinstance(ai_message, str):
-                logger.error(f"Invalid response from processing: {type(ai_message)} - {ai_message}")
                 return jsonify({
                     'error': 'Invalid response from AI processing.',
                     'success': False,
@@ -614,7 +566,7 @@ def chat():
             }), 500
 
         processing_time = time.time() - start_time
-        logger.info(f"Request processed in {processing_time:.2f} seconds via {processing_method}")
+        logger.info(f"Request processed in {processing_time:.2f}s via {processing_method}")
 
         return jsonify({
             'message': ai_message,
@@ -635,7 +587,6 @@ def chat():
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    """Enhanced health check endpoint with system status"""
     try:
         thread_pool_status = {
             'active_threads': executor._threads and len(executor._threads) or 0,
@@ -666,15 +617,11 @@ def health():
         })
     except Exception as e:
         logger.error(f"Health check error: {str(e)}")
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e)
-        }), 500
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 
 @app.route('/api/metrics', methods=['GET'])
 def metrics():
-    """Metrics endpoint for monitoring"""
     try:
         return jsonify({
             'cache_size': len(response_cache),
@@ -691,26 +638,19 @@ def metrics():
 
 @app.route('/api/restart-async', methods=['POST'])
 def restart_async():
-    """Restart the async processing thread"""
     try:
         global async_thread
         if async_thread and async_thread.is_alive():
             async_processor.stop()
             async_thread.join(timeout=5)
-
         start_async_thread()
-
-        return jsonify({
-            'success': True,
-            'message': 'Async processing thread restarted'
-        })
+        return jsonify({'success': True, 'message': 'Async processing thread restarted'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/processing-stats', methods=['GET'])
 def processing_stats():
-    """Get detailed processing statistics"""
     try:
         stats = {
             'total_cache_entries': len(response_cache),
@@ -731,7 +671,6 @@ def processing_stats():
 
 @app.route('/api/clear-cache', methods=['POST'])
 def clear_cache():
-    """Clear the response cache"""
     try:
         global response_cache
         cache_size = len(response_cache)
@@ -754,20 +693,15 @@ def clear_cache():
 
 
 def cleanup_on_shutdown():
-    """Cleanup function to call on shutdown"""
     try:
         logger.info("Shutting down async components...")
         shutdown_event.set()
-
         if async_processor:
             async_processor.stop()
-
         if async_thread and async_thread.is_alive():
             async_thread.join(timeout=10)
-
         if executor:
             executor.shutdown(wait=True)
-
         logger.info("Cleanup completed")
     except Exception as e:
         logger.error(f"Cleanup error: {str(e)}")
@@ -778,7 +712,6 @@ atexit.register(cleanup_on_shutdown)
 
 
 def create_app():
-    """Application factory pattern for better testing and deployment"""
     start_async_thread()
     return app
 
@@ -788,14 +721,7 @@ if __name__ == '__main__':
         logger.warning("OPENROUTER_API_KEY not found in environment variables")
 
     logger.info("Starting hybrid async+threading development server...")
-    logger.info("Features:")
-    logger.info("  - Threading: ✅ (ThreadPoolExecutor with 10 workers)")
-    logger.info("  - Async: ✅ (Dedicated async event loop)")
-    logger.info("  - Hybrid Processing: ✅ (Falls back gracefully)")
-    logger.info("  - Caching: ✅ (5-minute response cache)")
-    logger.info("  - Rate Limiting: ✅ (20 req/min per IP)")
-    logger.info("")
-    logger.info("For production, use: gunicorn -w 4 -k gevent --timeout 120 --bind 0.0.0.0:4343 app:app")
+    logger.info("For production: gunicorn -w 4 -k gevent --timeout 120 --bind 0.0.0.0:4343 app:app")
 
     start_async_thread()
 
