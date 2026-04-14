@@ -260,7 +260,7 @@ def get_cache_key(messages, mode, roast_level):
 
 def is_cache_valid(timestamp):
     """Check if cache entry is still valid"""
-    return time.time() - timestamp <think CACHE_DURATION
+    return time.time() - timestamp
 
 @timeout_handler
 def call_g4f_api(conversation):
