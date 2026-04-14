@@ -16,6 +16,7 @@ from collections import deque
 import weakref
 from dotenv import load_dotenv
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 # Load environment variables
 load_dotenv()
@@ -34,13 +35,13 @@ logger = logging.getLogger(__name__)
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour", "10 per minute"]
+    default_limits=["20/';ll;[0 per day", "50 per hour", "10 per minute"]
 )
 limiter.init_app(app)
 
 # API config
 API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-API_BASE_URL = os.getenv("OPENROUTER_SERVER_URL", "https://ai.hackclub.com/proxy/v1")
+API_BASE_URL = os.getenv("OPENROUTER_SERVER_URL", "https://ai.hackclub.com/proxy/v1").rstrip("/")
 API_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-3-flash-preview")
 
 if not API_KEY:
@@ -57,6 +58,9 @@ def _extract_content(content: str) -> str:
 
 def _call_proxy(messages: list) -> str:
     """Send a chat request via plain HTTP to the HackClub proxy."""
+    if not API_KEY or not API_KEY.strip():
+        raise PermissionError("OPENROUTER_API_KEY is missing or empty")
+
     url = f"{API_BASE_URL}/chat/completions"
     payload = {
         "model": API_MODEL,
@@ -67,10 +71,29 @@ def _call_proxy(messages: list) -> str:
     req = Request(url=url, data=body, method="POST", headers={
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",
+        "User-Agent": "convince-ai-backend/1.0",
     })
 
-    with urlopen(req, timeout=60) as response:
-        data = json.loads(response.read().decode("utf-8"))
+    try:
+        with urlopen(req, timeout=60) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except HTTPError as e:
+        body_text = ""
+        try:
+            body_text = e.read().decode("utf-8", errors="replace")
+        except Exception:
+            body_text = ""
+
+        if e.code == 403:
+            raise PermissionError(
+                f"Provider rejected the request (403). Check OPENROUTER_API_KEY, OPENROUTER_SERVER_URL, and OPENROUTER_MODEL. Response: {body_text[:400]}"
+            ) from e
+
+        raise RuntimeError(
+            f"Upstream HTTP error {e.code}: {body_text[:400]}"
+        ) from e
+    except URLError as e:
+        raise RuntimeError(f"Network error while calling provider: {e.reason}") from e
 
     content = data["choices"][0]["message"]["content"]
     if not content:
