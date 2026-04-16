@@ -171,6 +171,9 @@ def _get_latest_user_message(messages):
 
 
 def _should_enrich_with_web(messages):
+    if _is_time_sensitive_query(messages):
+        return False
+
     query = _get_latest_user_message(messages).lower()
     if not query:
         return False
@@ -196,8 +199,71 @@ def _should_enrich_with_web(messages):
         if re.search(pattern, query):
             return False
 
-    # Use web context by default for meaningful user prompts so factual answers can be up-to-date.
-    return True
+    web_intent_patterns = [
+        r"\bsearch\b",
+        r"\blook\s+up\b",
+        r"\bfind\s+online\b",
+        r"\bon\s+the\s+internet\b",
+        r"\blatest\b",
+        r"\bcurrent\b",
+        r"\bas\s+of\s+today\b",
+        r"\bright\s+now\b",
+        r"\bnews\b",
+        r"\bheadline\b",
+        r"\btrending\b",
+        r"\bprice\b",
+        r"\bstock\b",
+        r"\bmarket\b",
+        r"\bweather\b",
+        r"\bscore\b",
+        r"\bresults?\b",
+        r"\brelease\s+date\b",
+        r"\bupdated?\b",
+        r"\bversion\b",
+        r"\bnew\s+feature\b",
+        r"\bpatch\s+notes\b",
+        r"\broadmap\b",
+        r"\bstatus\b",
+    ]
+
+    if any(re.search(pattern, query) for pattern in web_intent_patterns):
+        return True
+
+    # Year-based recency checks often imply user wants up-to-date web data.
+    if re.search(r"\b20(2[4-9]|3[0-5])\b", query):
+        return True
+
+    return False
+
+
+def _tokenize_query(text):
+    tokens = re.findall(r"[a-z0-9]+", (text or "").lower())
+    stop_words = {
+        "the", "is", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with",
+        "what", "who", "when", "where", "why", "how", "it", "this", "that", "i", "you",
+        "me", "my", "your", "are", "was", "were", "be", "do", "does", "did", "at", "from",
+    }
+    return {token for token in tokens if token not in stop_words and len(token) > 2}
+
+
+def _filter_web_results_by_relevance(query, results):
+    query_tokens = _tokenize_query(query)
+    if not query_tokens:
+        return []
+
+    filtered = []
+    for item in results:
+        haystack = " ".join([
+            item.get("title") or "",
+            item.get("snippet") or "",
+            item.get("url") or "",
+        ]).lower()
+        overlap = sum(1 for token in query_tokens if token in haystack)
+        if overlap > 0:
+            filtered.append((overlap, item))
+
+    filtered.sort(key=lambda pair: pair[0], reverse=True)
+    return [item for _, item in filtered[:WEB_RESULTS_LIMIT]]
 
 
 def _http_get_json(url, timeout=WEB_SEARCH_TIMEOUT):
@@ -312,7 +378,7 @@ def _fetch_web_context(query):
     except Exception as e:
         logger.warning(f"Wikipedia context fetch failed: {str(e)}")
 
-    results = results[:WEB_RESULTS_LIMIT]
+    results = _filter_web_results_by_relevance(query, results)
     _web_context_cache[cache_key] = {
         "timestamp": now_ts,
         "results": results,
@@ -341,7 +407,7 @@ def _get_web_context_message(messages):
     lines = [
         "WEB_CONTEXT: Use these recent web findings as grounding for factual/current claims in this reply.",
         "Prefer these sources over model memory when they conflict.",
-        "If giving a factual answer, include a short source mention in plain text.",
+        "Do not mention searching or cite sources unless the user explicitly asks for sources.",
     ]
 
     for idx, item in enumerate(web_results, start=1):
