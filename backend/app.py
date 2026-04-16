@@ -8,15 +8,19 @@ import threading
 import time
 import logging
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import queue
 from threading import Thread, Event
 from collections import deque
 import weakref
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote_plus, quote
 
 # Load environment variables
 load_dotenv()
@@ -117,6 +121,307 @@ CACHE_DURATION = 300  # 5 minutes
 request_queue = deque(maxlen=1000)
 active_requests = weakref.WeakSet()
 
+FRANKFURT_TZ = "Europe/Berlin"
+LIVE_TIME_API_URL = f"https://worldtimeapi.org/api/timezone/{FRANKFURT_TZ}"
+LIVE_TIME_TIMEOUT = 5
+LIVE_TIME_CACHE_SECONDS = 15
+_live_time_cache = {"timestamp": 0.0, "data": None}
+WEB_SEARCH_TIMEOUT = 7
+WEB_RESULTS_LIMIT = 3
+WEB_CONTEXT_CACHE_SECONDS = 300
+_web_context_cache = {}
+
+DUCKDUCKGO_API_URL = "https://api.duckduckgo.com/"
+WIKIPEDIA_OPENSEARCH_URL = "https://en.wikipedia.org/w/api.php"
+WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+
+
+def _is_time_sensitive_query(messages):
+    if not messages:
+        return False
+
+    last_user_message = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            last_user_message = (msg.get("content") or "").lower()
+            break
+
+    if not last_user_message:
+        return False
+
+    patterns = [
+        r"\bwhat(?:'s| is)?\s+the\s+time\b",
+        r"\bcurrent\s+time\b",
+        r"\btime\s+is\s+it\b",
+        r"\btime\s+in\s+\w+",
+        r"\bfrankfurt\b",
+        r"\bberlin\b",
+        r"\bgermany\b",
+    ]
+    return any(re.search(pattern, last_user_message) for pattern in patterns)
+
+
+def _get_latest_user_message(messages):
+    if not messages:
+        return ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            return (msg.get("content") or "").strip()
+    return ""
+
+
+def _should_enrich_with_web(messages):
+    query = _get_latest_user_message(messages).lower()
+    if not query:
+        return False
+
+    if len(query) < 8:
+        return False
+
+    casual_patterns = [
+        r"^hi$",
+        r"^hello$",
+        r"^hey$",
+        r"^yo$",
+        r"^sup$",
+        r"^thanks?$",
+        r"^ok(ay)?$",
+        r"^cool$",
+        r"^nice$",
+        r"^lol$",
+        r"^lmao$",
+    ]
+
+    for pattern in casual_patterns:
+        if re.search(pattern, query):
+            return False
+
+    # Use web context by default for meaningful user prompts so factual answers can be up-to-date.
+    return True
+
+
+def _http_get_json(url, timeout=WEB_SEARCH_TIMEOUT):
+    req = Request(
+        url=url,
+        method="GET",
+        headers={
+            "User-Agent": "convince-ai-backend/1.0",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _fetch_duckduckgo_context(query):
+    url = (
+        f"{DUCKDUCKGO_API_URL}?q={quote_plus(query)}&format=json"
+        "&no_html=1&no_redirect=1&skip_disambig=0"
+    )
+    data = _http_get_json(url)
+
+    results = []
+    abstract = (data.get("AbstractText") or "").strip()
+    abstract_url = (data.get("AbstractURL") or "").strip()
+    heading = (data.get("Heading") or "").strip() or "DuckDuckGo Instant Answer"
+
+    if abstract:
+        results.append({
+            "title": heading,
+            "url": abstract_url or "https://duckduckgo.com",
+            "snippet": abstract,
+            "source": "duckduckgo",
+        })
+
+    related = data.get("RelatedTopics") or []
+    for item in related:
+        if len(results) >= WEB_RESULTS_LIMIT:
+            break
+        if isinstance(item, dict) and item.get("Text"):
+            results.append({
+                "title": (item.get("FirstURL") or "DuckDuckGo Topic").split("/")[-1].replace("_", " "),
+                "url": item.get("FirstURL") or "https://duckduckgo.com",
+                "snippet": (item.get("Text") or "").strip(),
+                "source": "duckduckgo",
+            })
+
+    return results[:WEB_RESULTS_LIMIT]
+
+
+def _fetch_wikipedia_context(query):
+    url = (
+        f"{WIKIPEDIA_OPENSEARCH_URL}?action=opensearch&search={quote_plus(query)}"
+        f"&limit={WEB_RESULTS_LIMIT}&namespace=0&format=json"
+    )
+    data = _http_get_json(url)
+
+    if not isinstance(data, list) or len(data) < 4:
+        return []
+
+    titles = data[1] or []
+    descriptions = data[2] or []
+    links = data[3] or []
+
+    results = []
+    for idx, title in enumerate(titles[:WEB_RESULTS_LIMIT]):
+        desc = descriptions[idx] if idx < len(descriptions) else ""
+        link = links[idx] if idx < len(links) else "https://wikipedia.org"
+
+        summary_snippet = desc
+        try:
+            summary_url = f"{WIKIPEDIA_SUMMARY_URL}{quote(title)}"
+            summary_data = _http_get_json(summary_url, timeout=WEB_SEARCH_TIMEOUT)
+            extract = (summary_data.get("extract") or "").strip()
+            if extract:
+                summary_snippet = extract
+        except Exception:
+            pass
+
+        if summary_snippet:
+            results.append({
+                "title": title,
+                "url": link,
+                "snippet": summary_snippet,
+                "source": "wikipedia",
+            })
+
+    return results[:WEB_RESULTS_LIMIT]
+
+
+def _fetch_web_context(query):
+    cache_key = query.strip().lower()
+    now_ts = time.time()
+
+    cached = _web_context_cache.get(cache_key)
+    if cached and now_ts - cached.get("timestamp", 0.0) < WEB_CONTEXT_CACHE_SECONDS:
+        return cached.get("results", [])
+
+    results = []
+
+    try:
+        results.extend(_fetch_duckduckgo_context(query))
+    except Exception as e:
+        logger.warning(f"DuckDuckGo context fetch failed: {str(e)}")
+
+    try:
+        wiki_results = _fetch_wikipedia_context(query)
+        seen_urls = {item.get("url") for item in results}
+        for item in wiki_results:
+            if item.get("url") not in seen_urls:
+                results.append(item)
+    except Exception as e:
+        logger.warning(f"Wikipedia context fetch failed: {str(e)}")
+
+    results = results[:WEB_RESULTS_LIMIT]
+    _web_context_cache[cache_key] = {
+        "timestamp": now_ts,
+        "results": results,
+    }
+    return results
+
+
+def _get_web_context_message(messages):
+    if not _should_enrich_with_web(messages):
+        return None
+
+    query = _get_latest_user_message(messages)
+    if not query:
+        return None
+
+    web_results = _fetch_web_context(query)
+    if not web_results:
+        return {
+            "role": "system",
+            "content": (
+                "WEB_CONTEXT: No external web results were available right now. "
+                "Be transparent if uncertain and avoid pretending you verified facts online."
+            ),
+        }
+
+    lines = [
+        "WEB_CONTEXT: Use these recent web findings as grounding for factual/current claims in this reply.",
+        "Prefer these sources over model memory when they conflict.",
+        "If giving a factual answer, include a short source mention in plain text.",
+    ]
+
+    for idx, item in enumerate(web_results, start=1):
+        lines.append(
+            f"{idx}. [{item['source']}] {item['title']} | {item['url']} | {item['snippet'][:500]}"
+        )
+
+    return {
+        "role": "system",
+        "content": "\n".join(lines),
+    }
+
+
+def _get_live_frankfurt_time():
+    now_ts = time.time()
+    if (
+        _live_time_cache.get("data")
+        and now_ts - _live_time_cache.get("timestamp", 0.0) < LIVE_TIME_CACHE_SECONDS
+    ):
+        return _live_time_cache["data"]
+
+    req = Request(
+        url=LIVE_TIME_API_URL,
+        method="GET",
+        headers={
+            "User-Agent": "convince-ai-backend/1.0",
+            "Accept": "application/json",
+        },
+    )
+
+    try:
+        with urlopen(req, timeout=LIVE_TIME_TIMEOUT) as response:
+            raw_data = json.loads(response.read().decode("utf-8"))
+
+        dt_str = raw_data.get("datetime")
+        if not dt_str:
+            raise ValueError("worldtimeapi response missing datetime")
+
+        frankfurt_dt = datetime.fromisoformat(dt_str)
+        utc_dt = frankfurt_dt.astimezone(timezone.utc)
+
+        data = {
+            "source": "worldtimeapi",
+            "frankfurt_iso": frankfurt_dt.isoformat(),
+            "frankfurt_human": frankfurt_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "utc_iso": utc_dt.isoformat(),
+        }
+        _live_time_cache["timestamp"] = now_ts
+        _live_time_cache["data"] = data
+        return data
+
+    except Exception as e:
+        logger.warning(f"Falling back to local time conversion: {str(e)}")
+        frankfurt_dt = datetime.now(ZoneInfo(FRANKFURT_TZ))
+        utc_dt = datetime.now(timezone.utc)
+        return {
+            "source": "local-fallback",
+            "frankfurt_iso": frankfurt_dt.isoformat(),
+            "frankfurt_human": frankfurt_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "utc_iso": utc_dt.isoformat(),
+        }
+
+
+def _get_realtime_context_message(messages):
+    if not _is_time_sensitive_query(messages):
+        return None
+
+    time_data = _get_live_frankfurt_time()
+    return {
+        "role": "system",
+        "content": (
+            "REALTIME_CONTEXT: Use this live time data for any time-related answer in this reply. "
+            "If user asks for your time, answer with Frankfurt time exactly from this context. "
+            f"Frankfurt timezone: {FRANKFURT_TZ}. "
+            f"Current Frankfurt time: {time_data['frankfurt_human']} ({time_data['frankfurt_iso']}). "
+            f"Current UTC time: {time_data['utc_iso']}. "
+            f"Data source: {time_data['source']}."
+        ),
+    }
+
 
 class AsyncRequestProcessor:
     def __init__(self):
@@ -134,7 +439,10 @@ class AsyncRequestProcessor:
         try:
             async with self.semaphore:
                 cache_key = get_cache_key(messages, mode, roast_level)
-                if cache_key in response_cache:
+                is_time_sensitive = _is_time_sensitive_query(messages)
+                should_use_web = _should_enrich_with_web(messages)
+                should_bypass_cache = is_time_sensitive or should_use_web
+                if not should_bypass_cache and cache_key in response_cache:
                     cached_response, timestamp = response_cache[cache_key]
                     if is_cache_valid(timestamp):
                         logger.info("Returning cached response (async)")
@@ -143,6 +451,12 @@ class AsyncRequestProcessor:
 
                 system_prompt = get_system_prompt(mode, roast_level)
                 conversation = [{"role": "system", "content": system_prompt}] + messages
+                realtime_context = _get_realtime_context_message(messages)
+                if realtime_context:
+                    conversation.insert(1, realtime_context)
+                web_context = _get_web_context_message(messages)
+                if web_context:
+                    conversation.insert(2 if realtime_context else 1, web_context)
 
                 ai_message = await self.call_api_async(conversation)
 
@@ -150,8 +464,9 @@ class AsyncRequestProcessor:
                     future_result.put(('error', 'Invalid response from AI API'))
                     return
 
-                response_cache[cache_key] = (ai_message, time.time())
-                await self.cleanup_cache()
+                if not should_bypass_cache:
+                    response_cache[cache_key] = (ai_message, time.time())
+                    await self.cleanup_cache()
                 future_result.put(('success', ai_message))
 
         except asyncio.TimeoutError:
@@ -449,8 +764,11 @@ If the user says:
 
 def process_chat_request(messages, mode, roast_level):
     try:
+        is_time_sensitive = _is_time_sensitive_query(messages)
+        should_use_web = _should_enrich_with_web(messages)
+        should_bypass_cache = is_time_sensitive or should_use_web
         cache_key = get_cache_key(messages, mode, roast_level)
-        if cache_key in response_cache:
+        if not should_bypass_cache and cache_key in response_cache:
             cached_response, timestamp = response_cache[cache_key]
             if is_cache_valid(timestamp):
                 logger.info("Returning cached response (sync)")
@@ -458,12 +776,19 @@ def process_chat_request(messages, mode, roast_level):
 
         system_prompt = get_system_prompt(mode, roast_level)
         conversation = [{"role": "system", "content": system_prompt}] + messages
+        realtime_context = _get_realtime_context_message(messages)
+        if realtime_context:
+            conversation.insert(1, realtime_context)
+        web_context = _get_web_context_message(messages)
+        if web_context:
+            conversation.insert(2 if realtime_context else 1, web_context)
 
         ai_message = call_api(conversation)
 
-        response_cache[cache_key] = (ai_message, time.time())
+        if not should_bypass_cache:
+            response_cache[cache_key] = (ai_message, time.time())
 
-        if len(response_cache) > 100:
+        if not should_bypass_cache and len(response_cache) > 100:
             old_keys = [k for k, (_, ts) in response_cache.items() if not is_cache_valid(ts)]
             for key in old_keys[:50]:
                 response_cache.pop(key, None)
