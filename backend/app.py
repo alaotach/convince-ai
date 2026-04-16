@@ -507,9 +507,15 @@ def _fetch_web_context(query, for_tool=False):
     mode_key = "tool" if for_tool else "default"
     cache_key = f"{mode_key}:{query.strip().lower()}"
     now_ts = time.time()
+    logger.info(
+        f"[web-search] mode={mode_key} query='{query[:120]}'"
+    )
 
     cached = _web_context_cache.get(cache_key)
     if cached and now_ts - cached.get("timestamp", 0.0) < WEB_CONTEXT_CACHE_SECONDS:
+        logger.info(
+            f"[web-search] cache-hit mode={mode_key} results={len(cached.get('results', []))}"
+        )
         return cached.get("results", [])
 
     results = []
@@ -551,6 +557,9 @@ def _fetch_web_context(query, for_tool=False):
         "timestamp": now_ts,
         "results": results[:final_limit],
     }
+    logger.info(
+        f"[web-search] completed mode={mode_key} results={len(results[:final_limit])}"
+    )
     return results[:final_limit]
 
 
@@ -785,8 +794,10 @@ def _call_langchain_with_tools(conversation):
         for call in tool_calls:
             tool_name = call.get("name")
             call_id = call.get("id") or f"tool_call_{int(time.time() * 1000)}"
+            logger.info(f"[langchain-tool] invoking name={tool_name} call_id={call_id}")
             tool_obj = _langchain_tool_map.get(tool_name)
             if not tool_obj:
+                logger.warning(f"[langchain-tool] unknown tool name={tool_name}")
                 lc_messages.append(ToolMessage(content="{}", tool_call_id=call_id))
                 continue
 
@@ -799,7 +810,9 @@ def _call_langchain_with_tools(conversation):
 
             try:
                 tool_result = tool_obj.invoke(args)
+                logger.info(f"[langchain-tool] success name={tool_name} call_id={call_id}")
             except Exception as e:
+                logger.error(f"[langchain-tool] error name={tool_name} call_id={call_id}: {str(e)}")
                 tool_result = json.dumps({"error": str(e), "tool": tool_name})
 
             lc_messages.append(ToolMessage(content=str(tool_result), tool_call_id=call_id))
