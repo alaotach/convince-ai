@@ -166,6 +166,7 @@ WIKIPEDIA_OPENSEARCH_URL = "https://en.wikipedia.org/w/api.php"
 WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/"
 BING_RSS_SEARCH_URL = "https://www.bing.com/search?format=rss&q="
 NPM_REGISTRY_URL = "https://registry.npmjs.org/"
+ENDOFLIFE_PYTHON_API_URL = "https://endoflife.date/api/python.json"
 
 _langchain_llm = None
 _langchain_tools = []
@@ -570,6 +571,57 @@ def _fetch_npm_package_info(package_name):
     }
 
 
+def _fetch_python_release_info():
+    data = _http_get_json(ENDOFLIFE_PYTHON_API_URL, timeout=WEB_SEARCH_TIMEOUT)
+    if not isinstance(data, list) or not data:
+        return {"error": "Invalid response from Python release API"}
+
+    stable_candidates = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+
+        cycle = (item.get("cycle") or "").strip()
+        latest = (item.get("latest") or "").strip()
+        latest_release_date = (item.get("latestReleaseDate") or "").strip()
+        eol = (item.get("eol") or "").strip()
+        lts = bool(item.get("lts"))
+
+        if latest:
+            stable_candidates.append({
+                "cycle": cycle,
+                "latest": latest,
+                "latest_release_date": latest_release_date,
+                "eol": eol,
+                "lts": lts,
+            })
+
+    if not stable_candidates:
+        return {"error": "No stable Python release candidates found"}
+
+    # Prefer highest semantic cycle.
+    def cycle_key(entry):
+        parts = []
+        for p in (entry.get("cycle") or "").split("."):
+            try:
+                parts.append(int(p))
+            except Exception:
+                parts.append(0)
+        return tuple(parts)
+
+    stable_candidates.sort(key=cycle_key, reverse=True)
+    top = stable_candidates[0]
+
+    return {
+        "source": "endoflife.date",
+        "latest_stable_series": top.get("cycle"),
+        "latest_stable_version": top.get("latest"),
+        "latest_stable_release_date": top.get("latest_release_date"),
+        "series_eol": top.get("eol"),
+        "is_lts_series": top.get("lts"),
+    }
+
+
 def _fetch_web_context(query, for_tool=False):
     mode_key = "tool" if for_tool else "default"
     cache_key = f"{mode_key}:{query.strip().lower()}"
@@ -877,12 +929,25 @@ def _create_langchain_tools():
         info = _fetch_npm_package_info(package_name)
         return json.dumps(info)
 
-    tools = [get_frankfurt_datetime, search_web_context, fetch_webpage, get_npm_package_info]
+    @tool("get_python_release_info")
+    def get_python_release_info() -> str:
+        """Get authoritative current Python stable release information."""
+        info = _fetch_python_release_info()
+        return json.dumps(info)
+
+    tools = [
+        get_frankfurt_datetime,
+        search_web_context,
+        fetch_webpage,
+        get_npm_package_info,
+        get_python_release_info,
+    ]
     tool_map = {
         "get_frankfurt_datetime": get_frankfurt_datetime,
         "search_web_context": search_web_context,
         "fetch_webpage": fetch_webpage,
         "get_npm_package_info": get_npm_package_info,
+        "get_python_release_info": get_python_release_info,
     }
     return tools, tool_map
 
@@ -939,18 +1004,25 @@ def _call_langchain_with_tools(conversation):
 
     llm = _get_langchain_llm().bind_tools(_langchain_tools)
     lc_messages = _to_langchain_messages(conversation)
+    now_utc = datetime.now(timezone.utc)
+    now_frankfurt = datetime.now(ZoneInfo(FRANKFURT_TZ))
 
     tool_policy = SystemMessage(
         content=(
+            f"Current UTC date: {now_utc.strftime('%Y-%m-%d')}. "
+            f"Current Frankfurt date: {now_frankfurt.strftime('%Y-%m-%d')}. "
             "Tool policy: Decide dynamically when tools are needed. "
             "For current facts or unknown claims, use search_web_context and then fetch_webpage if needed. "
             "For npm package version or release questions, use get_npm_package_info first. "
+            "For Python stable/latest version questions, use get_python_release_info first. "
             "For date/time questions, use get_frankfurt_datetime. "
             "If the user asks for latest/current/newest data, do at least one verification tool call before answering. "
+            "Do not do repeated search_web_context calls that only tweak years unless the user explicitly requested year-by-year comparison. "
             "Do not mention tool usage unless user explicitly asks."
         )
     )
     lc_messages.insert(0, tool_policy)
+    seen_search_queries = set()
 
     for _ in range(max(1, LANGCHAIN_MAX_TOOL_ROUNDS)):
         ai_message = llm.invoke(lc_messages)
@@ -977,6 +1049,22 @@ def _call_langchain_with_tools(conversation):
                     args = json.loads(args)
                 except Exception:
                     args = {"query": args}
+
+            if tool_name == "search_web_context":
+                raw_query = str((args or {}).get("query") or "").strip().lower()
+                normalized_query = re.sub(r"\s+", " ", raw_query)
+                if normalized_query in seen_search_queries:
+                    logger.info(
+                        f"[langchain-tool] skipped repeated search query='{normalized_query[:120]}'"
+                    )
+                    tool_result = json.dumps({
+                        "query": raw_query,
+                        "results": [],
+                        "note": "Skipped repeated search query in same request",
+                    })
+                    lc_messages.append(ToolMessage(content=str(tool_result), tool_call_id=call_id))
+                    continue
+                seen_search_queries.add(normalized_query)
 
             try:
                 tool_result = tool_obj.invoke(args)
