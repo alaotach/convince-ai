@@ -6,10 +6,10 @@ After=network.target
 Type=exec
 User=aloo
 Group=aloo
-WorkingDirectory=/data/home/convince-ai/backend
-Environment=PATH=/data/home/convince-ai/venv/bin
-Environment=PYTHONPATH=/data/home/convince-ai/backend
-ExecStart=/data/home/convince-ai/venv/bin/gunicorn -c gunicorn.conf.py app:app
+WorkingDirectory=/home/aloo/convince-ai/backend
+Environment=PATH=/home/aloo/convince-ai/venv/bin
+Environment=PYTHONPATH=/home/aloo/convince-ai/backend
+ExecStart=/home/aloo/convince-ai/venv/bin/gunicorn -c gunicorn.conf.py app:app
 ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=10
@@ -22,7 +22,7 @@ NoNewPrivileges=true
 DynamicUser=false
 ProtectSystem=full
 ProtectHome=false
-ReadWritePaths=/data/home/convince-ai/backend
+ReadWritePaths=/home/aloo/convince-ai/backend
 PrivateTmp=true
 
 [Install]

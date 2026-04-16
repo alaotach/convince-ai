@@ -9,7 +9,7 @@ echo "========================================"
 # Configuration
 DEPLOY_USER="aloo"
 DEPLOY_GROUP="aloo"
-APP_DIR="/data/home/convince-ai"
+APP_DIR="/home/aloo/convince-ai"
 BACKEND_DIR="$APP_DIR/backend"
 VENV_DIR="$APP_DIR/venv"
 SERVICE_NAME="convince-backend"
