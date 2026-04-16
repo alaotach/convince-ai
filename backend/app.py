@@ -1018,6 +1018,17 @@ def _get_realtime_context_message(messages):
     }
 
 
+def _get_response_style_guard_message():
+    return {
+        "role": "system",
+        "content": (
+            "RESPONSE_STYLE_GUARD: Keep replies natural and direct. "
+            "Do not ask a follow-up question unless the user explicitly asked for suggestions, options, or clarification. "
+            "Do not end every answer with a question."
+        ),
+    }
+
+
 def _create_langchain_tools():
     if not LANGCHAIN_AVAILABLE:
         return [], {}
@@ -1159,6 +1170,7 @@ def _call_langchain_with_tools(conversation):
             "For date/time questions, use get_frankfurt_datetime. "
             "If the user asks for latest/current/newest data, do at least one verification tool call before answering. "
             "Do not do repeated search_web_context calls that only tweak years unless the user explicitly requested year-by-year comparison. "
+            "Keep answers direct and avoid unnecessary follow-up questions. "
             "Do not mention tool usage unless user explicitly asks."
         )
     )
@@ -1263,13 +1275,14 @@ class AsyncRequestProcessor:
 
                 system_prompt = get_system_prompt(mode, roast_level)
                 conversation = [{"role": "system", "content": system_prompt}] + messages
+                conversation.insert(1, _get_response_style_guard_message())
                 if not ENABLE_LANGCHAIN_TOOLS:
                     realtime_context = _get_realtime_context_message(messages)
                     if realtime_context:
-                        conversation.insert(1, realtime_context)
+                        conversation.insert(2, realtime_context)
                     web_context = _get_web_context_message(messages)
                     if web_context:
-                        conversation.insert(2 if realtime_context else 1, web_context)
+                        conversation.insert(3 if realtime_context else 2, web_context)
 
                 ai_message = await self.call_api_async(conversation)
 
@@ -1592,13 +1605,14 @@ def process_chat_request(messages, mode, roast_level):
 
         system_prompt = get_system_prompt(mode, roast_level)
         conversation = [{"role": "system", "content": system_prompt}] + messages
+        conversation.insert(1, _get_response_style_guard_message())
         if not ENABLE_LANGCHAIN_TOOLS:
             realtime_context = _get_realtime_context_message(messages)
             if realtime_context:
-                conversation.insert(1, realtime_context)
+                conversation.insert(2, realtime_context)
             web_context = _get_web_context_message(messages)
             if web_context:
-                conversation.insert(2 if realtime_context else 1, web_context)
+                conversation.insert(3 if realtime_context else 2, web_context)
 
         ai_message = call_api(conversation)
 
