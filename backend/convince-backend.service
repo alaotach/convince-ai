@@ -9,6 +9,7 @@ Group=aloo
 WorkingDirectory=/home/aloo/convince-ai/backend
 Environment=PATH=/home/aloo/convince-ai/venv/bin
 Environment=PYTHONPATH=/home/aloo/convince-ai/backend
+Environment=ENABLE_LANGCHAIN_TOOLS=true
 ExecStart=/home/aloo/convince-ai/venv/bin/gunicorn -c gunicorn.conf.py app:app
 ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always

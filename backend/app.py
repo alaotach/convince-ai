@@ -148,6 +148,7 @@ active_requests = weakref.WeakSet()
 
 FRANKFURT_TZ = "Europe/Berlin"
 LIVE_TIME_API_URL = f"https://worldtimeapi.org/api/timezone/{FRANKFURT_TZ}"
+LIVE_TIME_BACKUP_API_URL = f"https://timeapi.io/api/Time/current/zone?timeZone={quote_plus(FRANKFURT_TZ)}"
 LIVE_TIME_TIMEOUT = 5
 LIVE_TIME_RETRY_ATTEMPTS = 2
 LIVE_TIME_RETRY_DELAY_SECONDS = 0.4
@@ -689,6 +690,36 @@ def _get_live_frankfurt_time():
 
         if attempt < LIVE_TIME_RETRY_ATTEMPTS:
             time.sleep(LIVE_TIME_RETRY_DELAY_SECONDS)
+
+    backup_started_at = time.time()
+    try:
+        backup_data = _http_get_json(LIVE_TIME_BACKUP_API_URL, timeout=LIVE_TIME_TIMEOUT)
+        backup_datetime = (backup_data.get("dateTime") or "").strip()
+        if not backup_datetime:
+            raise ValueError("timeapi.io response missing dateTime")
+
+        frankfurt_dt = datetime.fromisoformat(backup_datetime)
+        if frankfurt_dt.tzinfo is None:
+            frankfurt_dt = frankfurt_dt.replace(tzinfo=ZoneInfo(FRANKFURT_TZ))
+        utc_dt = frankfurt_dt.astimezone(timezone.utc)
+
+        elapsed_ms = int((time.time() - backup_started_at) * 1000)
+        logger.info(
+            f"[live-time] success provider=timeapi.io attempt=1 elapsed_ms={elapsed_ms}"
+        )
+        data = {
+            "source": "timeapi.io",
+            "frankfurt_iso": frankfurt_dt.isoformat(),
+            "frankfurt_human": frankfurt_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "utc_iso": utc_dt.isoformat(),
+        }
+        _live_time_cache["timestamp"] = now_ts
+        _live_time_cache["data"] = data
+        return data
+    except Exception as backup_error:
+        logger.warning(
+            f"[live-time] backup-provider-error provider=timeapi.io error={type(backup_error).__name__}: {str(backup_error)}"
+        )
 
     logger.warning(f"[live-time] falling back to local conversion after retries: {last_error_text}")
     frankfurt_dt = datetime.now(ZoneInfo(FRANKFURT_TZ))
