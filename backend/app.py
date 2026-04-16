@@ -12,6 +12,7 @@ import re
 from typing import Any
 from html.parser import HTMLParser
 from urllib.parse import urlparse
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import queue
@@ -163,6 +164,8 @@ _web_context_cache = {}
 DUCKDUCKGO_API_URL = "https://api.duckduckgo.com/"
 WIKIPEDIA_OPENSEARCH_URL = "https://en.wikipedia.org/w/api.php"
 WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+BING_RSS_SEARCH_URL = "https://www.bing.com/search?format=rss&q="
+NPM_REGISTRY_URL = "https://registry.npmjs.org/"
 
 _langchain_llm = None
 _langchain_tools = []
@@ -516,6 +519,57 @@ def _fetch_duckduckgo_html_results(query, limit=WEB_TOOL_RESULTS_LIMIT):
     return results
 
 
+def _fetch_bing_rss_results(query, limit=WEB_TOOL_RESULTS_LIMIT):
+    url = f"{BING_RSS_SEARCH_URL}{quote_plus(query)}"
+    xml_text = _http_get_text(url, timeout=WEB_SEARCH_TIMEOUT)
+
+    root = ET.fromstring(xml_text)
+    results = []
+    for item in root.findall(".//item"):
+        title = (item.findtext("title") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        description = (item.findtext("description") or "").strip()
+        if not link:
+            continue
+
+        results.append({
+            "title": title or "Bing Result",
+            "url": link,
+            "snippet": description,
+            "source": "bing-rss",
+        })
+
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def _fetch_npm_package_info(package_name):
+    cleaned = (package_name or "").strip()
+    if not cleaned:
+        return {"error": "Missing package name"}
+
+    safe_name = cleaned.replace("/", "%2F")
+    url = f"{NPM_REGISTRY_URL}{safe_name}"
+    data = _http_get_json(url, timeout=WEB_SEARCH_TIMEOUT)
+
+    dist_tags = data.get("dist-tags") or {}
+    latest = dist_tags.get("latest")
+    versions = data.get("versions") or {}
+    latest_meta = versions.get(latest, {}) if latest else {}
+
+    return {
+        "package": data.get("name") or cleaned,
+        "latest": latest,
+        "modified": (data.get("time") or {}).get("modified"),
+        "description": data.get("description") or "",
+        "homepage": data.get("homepage") or "",
+        "repository": (data.get("repository") or {}).get("url") if isinstance(data.get("repository"), dict) else "",
+        "latest_release_time": latest_meta.get("_npmUser") and (data.get("time") or {}).get(latest),
+    }
+
+
 def _fetch_web_context(query, for_tool=False):
     mode_key = "tool" if for_tool else "default"
     cache_key = f"{mode_key}:{query.strip().lower()}"
@@ -532,10 +586,14 @@ def _fetch_web_context(query, for_tool=False):
         return cached.get("results", [])
 
     results = []
+    provider_counts = {}
 
     try:
-        results.extend(_fetch_duckduckgo_context(query))
+        ddg_results = _fetch_duckduckgo_context(query)
+        provider_counts["duckduckgo_api"] = len(ddg_results)
+        results.extend(ddg_results)
     except Exception as e:
+        provider_counts["duckduckgo_api"] = 0
         logger.warning(f"DuckDuckGo context fetch failed: {str(e)}")
 
     try:
@@ -543,20 +601,38 @@ def _fetch_web_context(query, for_tool=False):
             query,
             limit=WEB_TOOL_RESULTS_LIMIT if for_tool else WEB_RESULTS_LIMIT,
         )
+        provider_counts["duckduckgo_html"] = len(html_results)
         seen_urls = {item.get("url") for item in results}
         for item in html_results:
             if item.get("url") not in seen_urls:
                 results.append(item)
     except Exception as e:
+        provider_counts["duckduckgo_html"] = 0
         logger.warning(f"DuckDuckGo HTML search failed: {str(e)}")
 
     try:
+        bing_results = _fetch_bing_rss_results(
+            query,
+            limit=WEB_TOOL_RESULTS_LIMIT if for_tool else WEB_RESULTS_LIMIT,
+        )
+        provider_counts["bing_rss"] = len(bing_results)
+        seen_urls = {item.get("url") for item in results}
+        for item in bing_results:
+            if item.get("url") not in seen_urls:
+                results.append(item)
+    except Exception as e:
+        provider_counts["bing_rss"] = 0
+        logger.warning(f"Bing RSS search failed: {str(e)}")
+
+    try:
         wiki_results = _fetch_wikipedia_context(query)
+        provider_counts["wikipedia"] = len(wiki_results)
         seen_urls = {item.get("url") for item in results}
         for item in wiki_results:
             if item.get("url") not in seen_urls:
                 results.append(item)
     except Exception as e:
+        provider_counts["wikipedia"] = 0
         logger.warning(f"Wikipedia context fetch failed: {str(e)}")
 
     if for_tool:
@@ -571,7 +647,7 @@ def _fetch_web_context(query, for_tool=False):
         "results": results[:final_limit],
     }
     logger.info(
-        f"[web-search] completed mode={mode_key} results={len(results[:final_limit])}"
+        f"[web-search] completed mode={mode_key} results={len(results[:final_limit])} providers={provider_counts}"
     )
     return results[:final_limit]
 
@@ -795,11 +871,18 @@ def _create_langchain_tools():
             return json.dumps({"url": "", "error": "Missing URL"})
         return json.dumps(_fetch_webpage_text(cleaned_url))
 
-    tools = [get_frankfurt_datetime, search_web_context, fetch_webpage]
+    @tool("get_npm_package_info")
+    def get_npm_package_info(package_name: str) -> str:
+        """Get authoritative npm registry metadata for a package, including latest version and timestamps."""
+        info = _fetch_npm_package_info(package_name)
+        return json.dumps(info)
+
+    tools = [get_frankfurt_datetime, search_web_context, fetch_webpage, get_npm_package_info]
     tool_map = {
         "get_frankfurt_datetime": get_frankfurt_datetime,
         "search_web_context": search_web_context,
         "fetch_webpage": fetch_webpage,
+        "get_npm_package_info": get_npm_package_info,
     }
     return tools, tool_map
 
@@ -861,7 +944,9 @@ def _call_langchain_with_tools(conversation):
         content=(
             "Tool policy: Decide dynamically when tools are needed. "
             "For current facts or unknown claims, use search_web_context and then fetch_webpage if needed. "
+            "For npm package version or release questions, use get_npm_package_info first. "
             "For date/time questions, use get_frankfurt_datetime. "
+            "If the user asks for latest/current/newest data, do at least one verification tool call before answering. "
             "Do not mention tool usage unless user explicitly asks."
         )
     )
