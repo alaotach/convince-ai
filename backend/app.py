@@ -67,6 +67,16 @@ except Exception as langchain_import_error:
 if not API_KEY:
     logger.warning("OPENROUTER_API_KEY not found in environment variables")
 
+if ENABLE_LANGCHAIN_TOOLS and not LANGCHAIN_AVAILABLE:
+    logger.warning(
+        "ENABLE_LANGCHAIN_TOOLS=true but LangChain modules are unavailable. "
+        "Install backend requirements and restart to enable tool routing."
+    )
+elif ENABLE_LANGCHAIN_TOOLS and LANGCHAIN_AVAILABLE:
+    logger.info("LangChain tool routing is ENABLED")
+else:
+    logger.info("LangChain tool routing is DISABLED; using default routing")
+
 
 def _extract_content(content: str) -> str:
     if '---' in content:
@@ -139,6 +149,8 @@ active_requests = weakref.WeakSet()
 FRANKFURT_TZ = "Europe/Berlin"
 LIVE_TIME_API_URL = f"https://worldtimeapi.org/api/timezone/{FRANKFURT_TZ}"
 LIVE_TIME_TIMEOUT = 5
+LIVE_TIME_RETRY_ATTEMPTS = 2
+LIVE_TIME_RETRY_DELAY_SECONDS = 0.4
 LIVE_TIME_CACHE_SECONDS = 15
 _live_time_cache = {"timestamp": 0.0, "data": None}
 WEB_SEARCH_TIMEOUT = 7
@@ -615,37 +627,79 @@ def _get_live_frankfurt_time():
         },
     )
 
-    try:
-        with urlopen(req, timeout=LIVE_TIME_TIMEOUT) as response:
-            raw_data = json.loads(response.read().decode("utf-8"))
+    last_error_text = "unknown"
+    for attempt in range(1, LIVE_TIME_RETRY_ATTEMPTS + 1):
+        started_at = time.time()
+        try:
+            with urlopen(req, timeout=LIVE_TIME_TIMEOUT) as response:
+                raw_data = json.loads(response.read().decode("utf-8"))
 
-        dt_str = raw_data.get("datetime")
-        if not dt_str:
-            raise ValueError("worldtimeapi response missing datetime")
+            dt_str = raw_data.get("datetime")
+            if not dt_str:
+                raise ValueError("worldtimeapi response missing datetime")
 
-        frankfurt_dt = datetime.fromisoformat(dt_str)
-        utc_dt = frankfurt_dt.astimezone(timezone.utc)
+            frankfurt_dt = datetime.fromisoformat(dt_str)
+            utc_dt = frankfurt_dt.astimezone(timezone.utc)
 
-        data = {
-            "source": "worldtimeapi",
-            "frankfurt_iso": frankfurt_dt.isoformat(),
-            "frankfurt_human": frankfurt_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
-            "utc_iso": utc_dt.isoformat(),
-        }
-        _live_time_cache["timestamp"] = now_ts
-        _live_time_cache["data"] = data
-        return data
+            data = {
+                "source": "worldtimeapi",
+                "frankfurt_iso": frankfurt_dt.isoformat(),
+                "frankfurt_human": frankfurt_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+                "utc_iso": utc_dt.isoformat(),
+            }
+            _live_time_cache["timestamp"] = now_ts
+            _live_time_cache["data"] = data
+            elapsed_ms = int((time.time() - started_at) * 1000)
+            logger.info(
+                f"[live-time] success provider=worldtimeapi attempt={attempt} elapsed_ms={elapsed_ms}"
+            )
+            return data
 
-    except Exception as e:
-        logger.warning(f"Falling back to local time conversion: {str(e)}")
-        frankfurt_dt = datetime.now(ZoneInfo(FRANKFURT_TZ))
-        utc_dt = datetime.now(timezone.utc)
-        return {
-            "source": "local-fallback",
-            "frankfurt_iso": frankfurt_dt.isoformat(),
-            "frankfurt_human": frankfurt_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
-            "utc_iso": utc_dt.isoformat(),
-        }
+        except HTTPError as e:
+            elapsed_ms = int((time.time() - started_at) * 1000)
+            body_text = ""
+            try:
+                body_text = e.read().decode("utf-8", errors="replace")[:300]
+            except Exception:
+                body_text = ""
+            last_error_text = (
+                f"HTTPError code={e.code} reason={e.reason} url={LIVE_TIME_API_URL} "
+                f"attempt={attempt}/{LIVE_TIME_RETRY_ATTEMPTS} elapsed_ms={elapsed_ms} body={body_text}"
+            )
+            logger.warning(f"[live-time] provider-error {last_error_text}")
+
+        except URLError as e:
+            elapsed_ms = int((time.time() - started_at) * 1000)
+            reason = getattr(e, "reason", None)
+            errno = getattr(reason, "errno", None)
+            strerror = getattr(reason, "strerror", None)
+            last_error_text = (
+                f"URLError errno={errno} reason={reason} strerror={strerror} url={LIVE_TIME_API_URL} "
+                f"attempt={attempt}/{LIVE_TIME_RETRY_ATTEMPTS} elapsed_ms={elapsed_ms}"
+            )
+            logger.warning(f"[live-time] provider-error {last_error_text}")
+
+        except Exception as e:
+            elapsed_ms = int((time.time() - started_at) * 1000)
+            last_error_text = (
+                f"{type(e).__name__}: {str(e)} url={LIVE_TIME_API_URL} "
+                f"attempt={attempt}/{LIVE_TIME_RETRY_ATTEMPTS} elapsed_ms={elapsed_ms}"
+            )
+            logger.warning(f"[live-time] provider-error {last_error_text}")
+
+        if attempt < LIVE_TIME_RETRY_ATTEMPTS:
+            time.sleep(LIVE_TIME_RETRY_DELAY_SECONDS)
+
+    logger.warning(f"[live-time] falling back to local conversion after retries: {last_error_text}")
+    frankfurt_dt = datetime.now(ZoneInfo(FRANKFURT_TZ))
+    utc_dt = datetime.now(timezone.utc)
+    return {
+        "source": "local-fallback",
+        "fallback_reason": last_error_text,
+        "frankfurt_iso": frankfurt_dt.isoformat(),
+        "frankfurt_human": frankfurt_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+        "utc_iso": utc_dt.isoformat(),
+    }
 
 
 def _get_realtime_context_message(messages):
@@ -827,7 +881,9 @@ def _call_model_with_optional_tools(conversation):
         if not LANGCHAIN_AVAILABLE:
             logger.warning("ENABLE_LANGCHAIN_TOOLS=true but LangChain is unavailable. Falling back to direct proxy.")
         else:
+            logger.info("[routing] using langchain-tools path")
             return _call_langchain_with_tools(conversation)
+    logger.info("[routing] using direct-proxy path")
     return _call_proxy(conversation)
 
 
@@ -1280,6 +1336,10 @@ def chat():
             f"[{time.strftime('%H:%M:%S')}] PARSED in {(after_parse - request_start) * 1000:.0f}ms "
             f"- Mode: {mode}, Roast Level: {roast_level}, Async: {use_async}"
         )
+        logger.info(
+            f"[{time.strftime('%H:%M:%S')}] TOOLING CONFIG "
+            f"ENABLE_LANGCHAIN_TOOLS={ENABLE_LANGCHAIN_TOOLS} LANGCHAIN_AVAILABLE={LANGCHAIN_AVAILABLE}"
+        )
 
         try:
             if use_async and async_thread and async_thread.is_alive():
@@ -1367,6 +1427,11 @@ def health():
             'status': 'healthy',
             'message': 'AI Chat Backend is running',
             'uptime': time.time(),
+            'tooling': {
+                'enable_langchain_tools': ENABLE_LANGCHAIN_TOOLS,
+                'langchain_available': LANGCHAIN_AVAILABLE,
+                'routing_mode': 'langchain-tools' if (ENABLE_LANGCHAIN_TOOLS and LANGCHAIN_AVAILABLE) else 'direct-proxy'
+            },
             'thread_pool': thread_pool_status,
             'async_processing': async_status,
             'cache': cache_status,
