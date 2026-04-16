@@ -11,6 +11,7 @@ import json
 import re
 from typing import Any
 from html.parser import HTMLParser
+import html
 from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -167,6 +168,9 @@ WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/"
 BING_RSS_SEARCH_URL = "https://www.bing.com/search?format=rss&q="
 NPM_REGISTRY_URL = "https://registry.npmjs.org/"
 ENDOFLIFE_PYTHON_API_URL = "https://endoflife.date/api/python.json"
+GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search?q="
+ITUNES_SEARCH_API_URL = "https://itunes.apple.com/search"
+GOOGLE_WEB_SEARCH_URL = "https://www.google.com/search"
 
 _langchain_llm = None
 _langchain_tools = []
@@ -546,6 +550,106 @@ def _fetch_bing_rss_results(query, limit=WEB_TOOL_RESULTS_LIMIT):
     return results
 
 
+def _fetch_google_news_rss_results(query, limit=WEB_TOOL_RESULTS_LIMIT):
+    url = f"{GOOGLE_NEWS_RSS_URL}{quote_plus(query)}"
+    xml_text = _http_get_text(url, timeout=WEB_SEARCH_TIMEOUT)
+
+    root = ET.fromstring(xml_text)
+    results = []
+    for item in root.findall(".//item"):
+        title = (item.findtext("title") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        description = (item.findtext("description") or "").strip()
+        pub_date = (item.findtext("pubDate") or "").strip()
+        if not link:
+            continue
+
+        results.append({
+            "title": title or "News Result",
+            "url": link,
+            "snippet": f"{description} | {pub_date}".strip(" |"),
+            "source": "google-news-rss",
+        })
+
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def _fetch_google_web_results(query, limit=WEB_TOOL_RESULTS_LIMIT):
+    url = (
+        f"{GOOGLE_WEB_SEARCH_URL}?q={quote_plus(query)}&hl=en&num={max(1, min(limit, 10))}"
+    )
+    html_text = _http_get_text(url, timeout=WEB_SEARCH_TIMEOUT)
+
+    results = []
+    # Google result links usually look like: /url?q=<target>&sa=...
+    link_pattern = re.compile(r'<a href="/url\?q=([^"&]+)[^"]*"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+
+    for match in link_pattern.finditer(html_text):
+        target = html.unescape(match.group(1)).strip()
+        anchor_html = match.group(2)
+
+        if not target.startswith("http"):
+            continue
+
+        if "google.com" in target and "/search?" in target:
+            continue
+
+        title = re.sub(r"<[^>]+>", " ", anchor_html)
+        title = " ".join(html.unescape(title).split())
+        if not title:
+            title = "Google Result"
+
+        results.append({
+            "title": title,
+            "url": target,
+            "snippet": "",
+            "source": "google-web",
+        })
+
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def _fetch_itunes_album_releases(artist_name, keyword="", limit=5):
+    artist = (artist_name or "").strip()
+    if not artist:
+        return {"error": "Missing artist name"}
+
+    search_term = artist if not keyword else f"{artist} {keyword.strip()}"
+    url = (
+        f"{ITUNES_SEARCH_API_URL}?term={quote_plus(search_term)}"
+        "&entity=album&attribute=artistTerm"
+        f"&limit={max(1, min(limit, 15))}"
+    )
+
+    data = _http_get_json(url, timeout=WEB_SEARCH_TIMEOUT)
+    items = data.get("results") or []
+
+    normalized = []
+    for item in items:
+        release_date = (item.get("releaseDate") or "").strip()
+        normalized.append({
+            "artist": item.get("artistName") or "",
+            "album": item.get("collectionName") or "",
+            "release_date": release_date,
+            "track_count": item.get("trackCount"),
+            "url": item.get("collectionViewUrl") or "",
+            "country": item.get("country") or "",
+        })
+
+    normalized.sort(key=lambda x: x.get("release_date") or "", reverse=True)
+    return {
+        "source": "itunes",
+        "query": search_term,
+        "results": normalized[:limit],
+    }
+
+
 def _fetch_npm_package_info(package_name):
     cleaned = (package_name or "").strip()
     if not cleaned:
@@ -661,6 +765,34 @@ def _fetch_web_context(query, for_tool=False):
     except Exception as e:
         provider_counts["duckduckgo_html"] = 0
         logger.warning(f"DuckDuckGo HTML search failed: {str(e)}")
+
+    try:
+        gweb_results = _fetch_google_web_results(
+            query,
+            limit=WEB_TOOL_RESULTS_LIMIT if for_tool else WEB_RESULTS_LIMIT,
+        )
+        provider_counts["google_web"] = len(gweb_results)
+        seen_urls = {item.get("url") for item in results}
+        for item in gweb_results:
+            if item.get("url") not in seen_urls:
+                results.append(item)
+    except Exception as e:
+        provider_counts["google_web"] = 0
+        logger.warning(f"Google web search failed: {str(e)}")
+
+    try:
+        gnews_results = _fetch_google_news_rss_results(
+            query,
+            limit=WEB_TOOL_RESULTS_LIMIT if for_tool else WEB_RESULTS_LIMIT,
+        )
+        provider_counts["google_news_rss"] = len(gnews_results)
+        seen_urls = {item.get("url") for item in results}
+        for item in gnews_results:
+            if item.get("url") not in seen_urls:
+                results.append(item)
+    except Exception as e:
+        provider_counts["google_news_rss"] = 0
+        logger.warning(f"Google News RSS search failed: {str(e)}")
 
     try:
         bing_results = _fetch_bing_rss_results(
@@ -935,12 +1067,19 @@ def _create_langchain_tools():
         info = _fetch_python_release_info()
         return json.dumps(info)
 
+    @tool("get_music_album_releases")
+    def get_music_album_releases(artist_name: str, keyword: str = "") -> str:
+        """Get latest album releases for an artist from iTunes API, optionally filtered by a keyword like 'BTS'."""
+        info = _fetch_itunes_album_releases(artist_name=artist_name, keyword=keyword, limit=5)
+        return json.dumps(info)
+
     tools = [
         get_frankfurt_datetime,
         search_web_context,
         fetch_webpage,
         get_npm_package_info,
         get_python_release_info,
+        get_music_album_releases,
     ]
     tool_map = {
         "get_frankfurt_datetime": get_frankfurt_datetime,
@@ -948,6 +1087,7 @@ def _create_langchain_tools():
         "fetch_webpage": fetch_webpage,
         "get_npm_package_info": get_npm_package_info,
         "get_python_release_info": get_python_release_info,
+        "get_music_album_releases": get_music_album_releases,
     }
     return tools, tool_map
 
@@ -1015,6 +1155,7 @@ def _call_langchain_with_tools(conversation):
             "For current facts or unknown claims, use search_web_context and then fetch_webpage if needed. "
             "For npm package version or release questions, use get_npm_package_info first. "
             "For Python stable/latest version questions, use get_python_release_info first. "
+            "For music album release questions (e.g., 'new BTS album'), use get_music_album_releases first, then search_web_context for supporting news if needed. "
             "For date/time questions, use get_frankfurt_datetime. "
             "If the user asks for latest/current/newest data, do at least one verification tool call before answering. "
             "Do not do repeated search_web_context calls that only tweak years unless the user explicitly requested year-by-year comparison. "
