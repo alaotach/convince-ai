@@ -5,3 +5,5 @@ openrouter
 gunicorn[gevent]
 python-dotenv
 aiohttp
+langchain
+langchain-openai

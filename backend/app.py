@@ -9,6 +9,9 @@ import time
 import logging
 import json
 import re
+from typing import Any
+from html.parser import HTMLParser
+from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import queue
@@ -48,6 +51,18 @@ limiter.init_app(app)
 API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 API_BASE_URL = os.getenv("OPENROUTER_SERVER_URL", "https://ai.hackclub.com/proxy/v1").rstrip("/")
 API_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-3-flash-preview")
+ENABLE_LANGCHAIN_TOOLS = os.getenv("ENABLE_LANGCHAIN_TOOLS", "false").lower() == "true"
+LANGCHAIN_MAX_TOOL_ROUNDS = int(os.getenv("LANGCHAIN_MAX_TOOL_ROUNDS", "3"))
+
+LANGCHAIN_AVAILABLE = False
+try:
+    from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+    from langchain_core.tools import tool
+    from langchain_openai import ChatOpenAI
+
+    LANGCHAIN_AVAILABLE = True
+except Exception as langchain_import_error:
+    logger.warning(f"LangChain imports unavailable: {str(langchain_import_error)}")
 
 if not API_KEY:
     logger.warning("OPENROUTER_API_KEY not found in environment variables")
@@ -128,12 +143,42 @@ LIVE_TIME_CACHE_SECONDS = 15
 _live_time_cache = {"timestamp": 0.0, "data": None}
 WEB_SEARCH_TIMEOUT = 7
 WEB_RESULTS_LIMIT = 3
+WEB_TOOL_RESULTS_LIMIT = 5
 WEB_CONTEXT_CACHE_SECONDS = 300
 _web_context_cache = {}
 
 DUCKDUCKGO_API_URL = "https://api.duckduckgo.com/"
 WIKIPEDIA_OPENSEARCH_URL = "https://en.wikipedia.org/w/api.php"
 WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+
+_langchain_llm = None
+_langchain_tools = []
+_langchain_tool_map = {}
+
+
+class _SimpleHTMLTextParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self._chunks = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in {"script", "style", "noscript"}:
+            self._skip_depth += 1
+
+    def handle_endtag(self, tag):
+        if tag in {"script", "style", "noscript"} and self._skip_depth > 0:
+            self._skip_depth -= 1
+
+    def handle_data(self, data):
+        if self._skip_depth > 0:
+            return
+        cleaned = " ".join((data or "").split())
+        if cleaned:
+            self._chunks.append(cleaned)
+
+    def text(self):
+        return " ".join(self._chunks)
 
 
 def _is_time_sensitive_query(messages):
@@ -154,6 +199,13 @@ def _is_time_sensitive_query(messages):
         r"\bcurrent\s+time\b",
         r"\btime\s+is\s+it\b",
         r"\btime\s+in\s+\w+",
+        r"\bwhat(?:'s| is)?\s+the\s+date\b",
+        r"\bcurrent\s+date\b",
+        r"\bdate\s+today\b",
+        r"\bwhat\s+day\s+is\s+it\b",
+        r"\bwhich\s+day\b",
+        r"\btoday'?s\s+date\b",
+        r"\btoday\b",
         r"\bfrankfurt\b",
         r"\bberlin\b",
         r"\bgermany\b",
@@ -279,6 +331,72 @@ def _http_get_json(url, timeout=WEB_SEARCH_TIMEOUT):
         return json.loads(response.read().decode("utf-8"))
 
 
+def _http_get_text(url, timeout=WEB_SEARCH_TIMEOUT):
+    req = Request(
+        url=url,
+        method="GET",
+        headers={
+            "User-Agent": "convince-ai-backend/1.0",
+            "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
+        },
+    )
+    with urlopen(req, timeout=timeout) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+
+def _is_safe_external_url(candidate_url):
+    try:
+        parsed = urlparse(candidate_url)
+        if parsed.scheme not in {"http", "https"}:
+            return False
+
+        host = (parsed.hostname or "").lower()
+        if not host:
+            return False
+
+        blocked_exact = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+        if host in blocked_exact:
+            return False
+
+        blocked_prefixes = [
+            "10.",
+            "127.",
+            "169.254.",
+            "172.16.", "172.17.", "172.18.", "172.19.",
+            "172.20.", "172.21.", "172.22.", "172.23.",
+            "172.24.", "172.25.", "172.26.", "172.27.",
+            "172.28.", "172.29.", "172.30.", "172.31.",
+            "192.168.",
+        ]
+        if any(host.startswith(prefix) for prefix in blocked_prefixes):
+            return False
+
+        if host.endswith(".local") or host.endswith(".internal"):
+            return False
+
+        return True
+    except Exception:
+        return False
+
+
+def _fetch_webpage_text(url):
+    if not _is_safe_external_url(url):
+        return {"url": url, "error": "Blocked URL. Only safe public http/https URLs are allowed."}
+
+    try:
+        html = _http_get_text(url, timeout=WEB_SEARCH_TIMEOUT)
+        parser = _SimpleHTMLTextParser()
+        parser.feed(html)
+        content = parser.text()
+        return {
+            "url": url,
+            "content": content[:5000],
+            "truncated": len(content) > 5000,
+        }
+    except Exception as e:
+        return {"url": url, "error": f"Failed to fetch page: {str(e)}"}
+
+
 def _fetch_duckduckgo_context(query):
     url = (
         f"{DUCKDUCKGO_API_URL}?q={quote_plus(query)}&format=json"
@@ -354,8 +472,40 @@ def _fetch_wikipedia_context(query):
     return results[:WEB_RESULTS_LIMIT]
 
 
-def _fetch_web_context(query):
-    cache_key = query.strip().lower()
+def _fetch_duckduckgo_html_results(query, limit=WEB_TOOL_RESULTS_LIMIT):
+    url = f"https://duckduckgo.com/html/?q={quote_plus(query)}"
+    html = _http_get_text(url, timeout=WEB_SEARCH_TIMEOUT)
+
+    results = []
+    for part in html.split('<a rel="nofollow" class="result__a" href="')[1:]:
+        href_end = part.find('"')
+        title_end = part.find("</a>")
+        if href_end <= 0 or title_end <= 0:
+            continue
+
+        href = part[:href_end]
+        title_fragment = part[href_end + 2:title_end]
+        title = " ".join(HTMLParser().unescape(title_fragment).split()) if hasattr(HTMLParser(), 'unescape') else " ".join(title_fragment.split())
+
+        if not href.startswith("http"):
+            continue
+
+        results.append({
+            "title": title or "Search Result",
+            "url": href,
+            "snippet": "",
+            "source": "duckduckgo-web",
+        })
+
+        if len(results) >= limit:
+            break
+
+    return results
+
+
+def _fetch_web_context(query, for_tool=False):
+    mode_key = "tool" if for_tool else "default"
+    cache_key = f"{mode_key}:{query.strip().lower()}"
     now_ts = time.time()
 
     cached = _web_context_cache.get(cache_key)
@@ -370,6 +520,18 @@ def _fetch_web_context(query):
         logger.warning(f"DuckDuckGo context fetch failed: {str(e)}")
 
     try:
+        html_results = _fetch_duckduckgo_html_results(
+            query,
+            limit=WEB_TOOL_RESULTS_LIMIT if for_tool else WEB_RESULTS_LIMIT,
+        )
+        seen_urls = {item.get("url") for item in results}
+        for item in html_results:
+            if item.get("url") not in seen_urls:
+                results.append(item)
+    except Exception as e:
+        logger.warning(f"DuckDuckGo HTML search failed: {str(e)}")
+
+    try:
         wiki_results = _fetch_wikipedia_context(query)
         seen_urls = {item.get("url") for item in results}
         for item in wiki_results:
@@ -378,12 +540,18 @@ def _fetch_web_context(query):
     except Exception as e:
         logger.warning(f"Wikipedia context fetch failed: {str(e)}")
 
-    results = _filter_web_results_by_relevance(query, results)
+    if for_tool:
+        final_limit = WEB_TOOL_RESULTS_LIMIT
+        results = results[:final_limit]
+    else:
+        final_limit = WEB_RESULTS_LIMIT
+        results = _filter_web_results_by_relevance(query, results)
+
     _web_context_cache[cache_key] = {
         "timestamp": now_ts,
-        "results": results,
+        "results": results[:final_limit],
     }
-    return results
+    return results[:final_limit]
 
 
 def _get_web_context_message(messages):
@@ -476,17 +644,178 @@ def _get_realtime_context_message(messages):
         return None
 
     time_data = _get_live_frankfurt_time()
+    frankfurt_dt = datetime.fromisoformat(time_data["frankfurt_iso"])
+    frankfurt_date = frankfurt_dt.strftime("%Y-%m-%d")
+    frankfurt_weekday = frankfurt_dt.strftime("%A")
+
     return {
         "role": "system",
         "content": (
-            "REALTIME_CONTEXT: Use this live time data for any time-related answer in this reply. "
-            "If user asks for your time, answer with Frankfurt time exactly from this context. "
+            "REALTIME_CONTEXT: Use this live date/time data for any time- or date-related answer in this reply. "
+            "If user asks for date/time/day/today/now, answer exactly from this context. "
+            "Do not guess and do not use model memory for date/time values. "
             f"Frankfurt timezone: {FRANKFURT_TZ}. "
+            f"Current Frankfurt date: {frankfurt_date}. "
+            f"Current Frankfurt weekday: {frankfurt_weekday}. "
             f"Current Frankfurt time: {time_data['frankfurt_human']} ({time_data['frankfurt_iso']}). "
             f"Current UTC time: {time_data['utc_iso']}. "
             f"Data source: {time_data['source']}."
         ),
     }
+
+
+def _create_langchain_tools():
+    if not LANGCHAIN_AVAILABLE:
+        return [], {}
+
+    @tool("get_frankfurt_datetime")
+    def get_frankfurt_datetime() -> str:
+        """Return the current date, day, and time in Frankfurt (Europe/Berlin)."""
+        time_data = _get_live_frankfurt_time()
+        frankfurt_dt = datetime.fromisoformat(time_data["frankfurt_iso"])
+        payload = {
+            "timezone": FRANKFURT_TZ,
+            "date": frankfurt_dt.strftime("%Y-%m-%d"),
+            "weekday": frankfurt_dt.strftime("%A"),
+            "time": frankfurt_dt.strftime("%H:%M:%S"),
+            "iso": time_data["frankfurt_iso"],
+            "source": time_data["source"],
+        }
+        return json.dumps(payload)
+
+    @tool("search_web_context")
+    def search_web_context(query: str) -> str:
+        """Search the public web for a query and return recent candidate results with links."""
+        cleaned_query = (query or "").strip()
+        if not cleaned_query:
+            return json.dumps({"query": "", "results": []})
+
+        results = _fetch_web_context(cleaned_query, for_tool=True)
+        return json.dumps({"query": cleaned_query, "results": results})
+
+    @tool("fetch_webpage")
+    def fetch_webpage(url: str) -> str:
+        """Fetch readable text content from a public webpage URL for deeper verification."""
+        cleaned_url = (url or "").strip()
+        if not cleaned_url:
+            return json.dumps({"url": "", "error": "Missing URL"})
+        return json.dumps(_fetch_webpage_text(cleaned_url))
+
+    tools = [get_frankfurt_datetime, search_web_context, fetch_webpage]
+    tool_map = {
+        "get_frankfurt_datetime": get_frankfurt_datetime,
+        "search_web_context": search_web_context,
+        "fetch_webpage": fetch_webpage,
+    }
+    return tools, tool_map
+
+
+def _get_langchain_llm():
+    global _langchain_llm
+    if _langchain_llm is None:
+        _langchain_llm = ChatOpenAI(
+            model=API_MODEL,
+            api_key=API_KEY,
+            base_url=API_BASE_URL,
+            timeout=OPENROUTER_TIMEOUT_SYNC,
+        )
+    return _langchain_llm
+
+
+def _ensure_langchain_runtime():
+    global _langchain_tools, _langchain_tool_map
+    if _langchain_tools and _langchain_tool_map:
+        return
+    _langchain_tools, _langchain_tool_map = _create_langchain_tools()
+
+
+def _to_langchain_messages(conversation):
+    lc_messages = []
+    for msg in conversation:
+        role = msg.get("role")
+        content = msg.get("content") or ""
+        if role == "system":
+            lc_messages.append(SystemMessage(content=content))
+        elif role == "assistant":
+            lc_messages.append(AIMessage(content=content))
+        else:
+            lc_messages.append(HumanMessage(content=content))
+    return lc_messages
+
+
+def _extract_tool_calls(ai_message: Any):
+    tool_calls = getattr(ai_message, "tool_calls", None)
+    if tool_calls:
+        return tool_calls
+
+    additional_kwargs = getattr(ai_message, "additional_kwargs", {}) or {}
+    return additional_kwargs.get("tool_calls") or []
+
+
+def _call_langchain_with_tools(conversation):
+    if not LANGCHAIN_AVAILABLE:
+        raise RuntimeError("LangChain is not available in this environment")
+
+    _ensure_langchain_runtime()
+    if not _langchain_tools:
+        raise RuntimeError("LangChain tools are not initialized")
+
+    llm = _get_langchain_llm().bind_tools(_langchain_tools)
+    lc_messages = _to_langchain_messages(conversation)
+
+    tool_policy = SystemMessage(
+        content=(
+            "Tool policy: Decide dynamically when tools are needed. "
+            "For current facts or unknown claims, use search_web_context and then fetch_webpage if needed. "
+            "For date/time questions, use get_frankfurt_datetime. "
+            "Do not mention tool usage unless user explicitly asks."
+        )
+    )
+    lc_messages.insert(0, tool_policy)
+
+    for _ in range(max(1, LANGCHAIN_MAX_TOOL_ROUNDS)):
+        ai_message = llm.invoke(lc_messages)
+        lc_messages.append(ai_message)
+
+        tool_calls = _extract_tool_calls(ai_message)
+        if not tool_calls:
+            content = ai_message.content or ""
+            return _extract_content(content if isinstance(content, str) else str(content))
+
+        for call in tool_calls:
+            tool_name = call.get("name")
+            call_id = call.get("id") or f"tool_call_{int(time.time() * 1000)}"
+            tool_obj = _langchain_tool_map.get(tool_name)
+            if not tool_obj:
+                lc_messages.append(ToolMessage(content="{}", tool_call_id=call_id))
+                continue
+
+            args = call.get("args", {})
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except Exception:
+                    args = {"query": args}
+
+            try:
+                tool_result = tool_obj.invoke(args)
+            except Exception as e:
+                tool_result = json.dumps({"error": str(e), "tool": tool_name})
+
+            lc_messages.append(ToolMessage(content=str(tool_result), tool_call_id=call_id))
+
+    fallback = llm.invoke(lc_messages)
+    fallback_content = fallback.content or ""
+    return _extract_content(fallback_content if isinstance(fallback_content, str) else str(fallback_content))
+
+
+def _call_model_with_optional_tools(conversation):
+    if ENABLE_LANGCHAIN_TOOLS:
+        if not LANGCHAIN_AVAILABLE:
+            logger.warning("ENABLE_LANGCHAIN_TOOLS=true but LangChain is unavailable. Falling back to direct proxy.")
+        else:
+            return _call_langchain_with_tools(conversation)
+    return _call_proxy(conversation)
 
 
 class AsyncRequestProcessor:
@@ -505,9 +834,12 @@ class AsyncRequestProcessor:
         try:
             async with self.semaphore:
                 cache_key = get_cache_key(messages, mode, roast_level)
-                is_time_sensitive = _is_time_sensitive_query(messages)
-                should_use_web = _should_enrich_with_web(messages)
-                should_bypass_cache = is_time_sensitive or should_use_web
+                if ENABLE_LANGCHAIN_TOOLS:
+                    should_bypass_cache = True
+                else:
+                    is_time_sensitive = _is_time_sensitive_query(messages)
+                    should_use_web = _should_enrich_with_web(messages)
+                    should_bypass_cache = is_time_sensitive or should_use_web
                 if not should_bypass_cache and cache_key in response_cache:
                     cached_response, timestamp = response_cache[cache_key]
                     if is_cache_valid(timestamp):
@@ -517,12 +849,13 @@ class AsyncRequestProcessor:
 
                 system_prompt = get_system_prompt(mode, roast_level)
                 conversation = [{"role": "system", "content": system_prompt}] + messages
-                realtime_context = _get_realtime_context_message(messages)
-                if realtime_context:
-                    conversation.insert(1, realtime_context)
-                web_context = _get_web_context_message(messages)
-                if web_context:
-                    conversation.insert(2 if realtime_context else 1, web_context)
+                if not ENABLE_LANGCHAIN_TOOLS:
+                    realtime_context = _get_realtime_context_message(messages)
+                    if realtime_context:
+                        conversation.insert(1, realtime_context)
+                    web_context = _get_web_context_message(messages)
+                    if web_context:
+                        conversation.insert(2 if realtime_context else 1, web_context)
 
                 ai_message = await self.call_api_async(conversation)
 
@@ -571,7 +904,7 @@ class AsyncRequestProcessor:
                 logger.info(f"Making blocking API call (async path, attempt {attempt + 1})")
                 start_time = time.time()
 
-                content = _call_proxy(conversation)
+                content = _call_model_with_optional_tools(conversation)
 
                 processing_time = time.time() - start_time
                 logger.info(f"API call completed in {processing_time:.2f}s (attempt {attempt + 1})")
@@ -678,7 +1011,7 @@ def call_api(conversation):
             logger.info(f"Making API call (attempt {attempt + 1})...")
             start_time = time.time()
 
-            content = _call_proxy(conversation)
+            content = _call_model_with_optional_tools(conversation)
 
             processing_time = time.time() - start_time
             logger.info(f"API call completed in {processing_time:.2f}s (attempt {attempt + 1})")
@@ -830,9 +1163,12 @@ If the user says:
 
 def process_chat_request(messages, mode, roast_level):
     try:
-        is_time_sensitive = _is_time_sensitive_query(messages)
-        should_use_web = _should_enrich_with_web(messages)
-        should_bypass_cache = is_time_sensitive or should_use_web
+        if ENABLE_LANGCHAIN_TOOLS:
+            should_bypass_cache = True
+        else:
+            is_time_sensitive = _is_time_sensitive_query(messages)
+            should_use_web = _should_enrich_with_web(messages)
+            should_bypass_cache = is_time_sensitive or should_use_web
         cache_key = get_cache_key(messages, mode, roast_level)
         if not should_bypass_cache and cache_key in response_cache:
             cached_response, timestamp = response_cache[cache_key]
@@ -842,12 +1178,13 @@ def process_chat_request(messages, mode, roast_level):
 
         system_prompt = get_system_prompt(mode, roast_level)
         conversation = [{"role": "system", "content": system_prompt}] + messages
-        realtime_context = _get_realtime_context_message(messages)
-        if realtime_context:
-            conversation.insert(1, realtime_context)
-        web_context = _get_web_context_message(messages)
-        if web_context:
-            conversation.insert(2 if realtime_context else 1, web_context)
+        if not ENABLE_LANGCHAIN_TOOLS:
+            realtime_context = _get_realtime_context_message(messages)
+            if realtime_context:
+                conversation.insert(1, realtime_context)
+            web_context = _get_web_context_message(messages)
+            if web_context:
+                conversation.insert(2 if realtime_context else 1, web_context)
 
         ai_message = call_api(conversation)
 
